@@ -1,5 +1,5 @@
 
-import { AttendanceFilters, AttendanceResponse } from "../types/attendance";
+import { AttendanceFilters, AttendanceResponse, AttendanceSummary } from "../types/attendance";
 import { toast } from "sonner";
 
 // Base API URL - would come from environment variables in a real app
@@ -85,6 +85,71 @@ export const fetchAttendanceData = async (
   } catch (error) {
     console.error("Error fetching attendance data:", error);
     toast.error("Failed to fetch attendance data. Please try again.");
+    throw error;
+  }
+};
+
+export const fetchAttendanceSummary = async (startDate: string, endDate: string): Promise<AttendanceSummary> => {
+  try {
+    console.log(`Fetching attendance summary from ${startDate} to ${endDate}`);
+    
+    // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    
+    // Generate dates between start and end
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const days: string[] = [];
+    
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      days.push(new Date(d).toISOString().split('T')[0]);
+    }
+    
+    // Generate mock summary data
+    const mockSummary: AttendanceSummary = {
+      totalRecords: Math.floor(Math.random() * 1000) + 500,
+      totalClockIn: Math.floor(Math.random() * 500) + 250,
+      totalClockOut: Math.floor(Math.random() * 500) + 250,
+      validRecords: Math.floor(Math.random() * 800) + 400,
+      invalidRecords: Math.floor(Math.random() * 200) + 50,
+      validPercentage: 0,
+      invalidPercentage: 0,
+      
+      byDate: days.map(day => ({
+        date: day,
+        clockIn: Math.floor(Math.random() * 50) + 20,
+        clockOut: Math.floor(Math.random() * 50) + 20,
+        total: Math.floor(Math.random() * 100) + 40
+      })),
+      
+      byStatus: [
+        { status: "On Time", count: Math.floor(Math.random() * 300) + 200 },
+        { status: "Late", count: Math.floor(Math.random() * 100) + 50 },
+        { status: "Early Departure", count: Math.floor(Math.random() * 100) + 30 },
+        { status: "Overtime", count: Math.floor(Math.random() * 50) + 20 }
+      ],
+      
+      byController: Array.from({ length: 6 }, (_, i) => ({
+        controller: `Controller ${i + 1}`,
+        valid: Math.floor(Math.random() * 200) + 100,
+        invalid: Math.floor(Math.random() * 50) + 10,
+        total: 0
+      }))
+    };
+    
+    // Calculate totals and percentages
+    mockSummary.validPercentage = Math.round((mockSummary.validRecords / mockSummary.totalRecords) * 100);
+    mockSummary.invalidPercentage = Math.round((mockSummary.invalidRecords / mockSummary.totalRecords) * 100);
+    
+    mockSummary.byController = mockSummary.byController.map(item => ({
+      ...item,
+      total: item.valid + item.invalid
+    }));
+    
+    return mockSummary;
+  } catch (error) {
+    console.error("Error fetching attendance summary:", error);
+    toast.error("Failed to fetch attendance summary data. Please try again.");
     throw error;
   }
 };

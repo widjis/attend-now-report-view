@@ -37,3 +37,38 @@ export interface AttendanceFilters {
   page: number;
   pageSize: number;
 }
+
+// Dashboard Types
+export type AttendanceTimeframe = "day" | "week" | "month" | "quarter";
+
+export interface DateAttendance {
+  date: string;
+  clockIn: number;
+  clockOut: number;
+  total: number;
+}
+
+export interface StatusAttendance {
+  status: string;
+  count: number;
+}
+
+export interface ControllerAttendance {
+  controller: string;
+  valid: number;
+  invalid: number;
+  total: number;
+}
+
+export interface AttendanceSummary {
+  totalRecords: number;
+  totalClockIn: number;
+  totalClockOut?: number;
+  validRecords: number;
+  invalidRecords: number;
+  validPercentage: number;
+  invalidPercentage: number;
+  byDate?: DateAttendance[];
+  byStatus?: StatusAttendance[];
+  byController?: ControllerAttendance[];
+}

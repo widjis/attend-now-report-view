@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { format, subDays } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { Toaster } from "sonner";
+import { Link } from "react-router-dom";
 
 // Components
 import DateRangePicker from "@/components/DateRangePicker";
@@ -12,6 +13,8 @@ import ExportButton from "@/components/ExportButton";
 import AttendanceTable from "@/components/AttendanceTable";
 import { DateRange } from "react-day-picker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ChartBarIcon } from "lucide-react";
 
 // API and Types
 import { 
@@ -88,11 +91,19 @@ const Index = () => {
       <Toaster position="top-right" />
 
       <div className="max-w-7xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Attendance Report</h1>
-          <p className="text-gray-500 mt-1">
-            View and export attendance records from the database
-          </p>
+        <header className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Attendance Report</h1>
+            <p className="text-gray-500 mt-1">
+              View and export attendance records from the database
+            </p>
+          </div>
+          <Link to="/dashboard">
+            <Button variant="outline" className="flex items-center gap-2">
+              <ChartBarIcon size={16} />
+              <span>View Dashboard</span>
+            </Button>
+          </Link>
         </header>
 
         <Card className="mb-6">
