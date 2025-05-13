@@ -1,4 +1,3 @@
-
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -17,6 +16,11 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/filters', filtersRoutes);
 
 // Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+// Keep original health endpoint for backward compatibility
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });

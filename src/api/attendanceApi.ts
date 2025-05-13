@@ -131,7 +131,7 @@ const generateMockSummaryData = (startDate: string, endDate: string): Attendance
 // Check if backend is available
 const checkBackendAvailability = async (): Promise<boolean> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/health`, {
+    const response = await fetch(`${API_BASE_URL.replace('/api', '')}/health`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       signal: AbortSignal.timeout(5000) // 5 second timeout
