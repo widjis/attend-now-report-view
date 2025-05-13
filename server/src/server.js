@@ -4,7 +4,6 @@ const express = require('express');
 const cors = require('cors');
 const attendanceRoutes = require('./routes/attendance');
 const filtersRoutes = require('./routes/filters');
-const employeesRoutes = require('./routes/employees');
 const { poolPromise } = require('./config/db');
 
 const app = express();
@@ -17,7 +16,6 @@ app.use(express.json());
 // Routes
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/filters', filtersRoutes);
-app.use('/api/employees', employeesRoutes);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
