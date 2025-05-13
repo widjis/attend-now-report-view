@@ -32,9 +32,9 @@ const Index = () => {
   // State for filters
   const [dateRange, setDateRange] = useState<DateRange | undefined>(defaultDateRange);
   const [searchTerm, setSearchTerm] = useState("");
-  const [department, setDepartment] = useState("");
-  const [company, setCompany] = useState("");
-  const [cardType, setCardType] = useState("");
+  const [department, setDepartment] = useState("all");
+  const [company, setCompany] = useState("all");
+  const [cardType, setCardType] = useState("all");
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [isExporting, setIsExporting] = useState(false);
@@ -51,9 +51,9 @@ const Index = () => {
       startDate: dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : format(subDays(today, 7), "yyyy-MM-dd"),
       endDate: dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : format(today, "yyyy-MM-dd"),
       search: searchTerm,
-      department: department || undefined,
-      company: company || undefined,
-      cardType: cardType || undefined,
+      department: department === "all" ? undefined : department,
+      company: company === "all" ? undefined : company,
+      cardType: cardType === "all" ? undefined : cardType,
       page,
       pageSize,
     };
