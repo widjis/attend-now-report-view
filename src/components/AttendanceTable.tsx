@@ -17,8 +17,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { format } from "date-fns";
-import { formatInTimeZone } from "date-fns-tz";
+import { format, parseISO } from "date-fns";
 import { AttendanceRecord } from "../types/attendance";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +30,6 @@ interface AttendanceTableProps {
   className?: string;
 }
 
-const TIMEZONE = "Asia/Singapore"; // UTC+8
 const TIMEZONE_DISPLAY = "GMT+8";
 
 const AttendanceTable: React.FC<AttendanceTableProps> = ({
@@ -57,8 +55,10 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
   const formatDateTime = (dateTime: string | null) => {
     if (!dateTime) return "N/A";
     try {
-      // Format the date in the specified timezone (UTC+8)
-      return formatInTimeZone(new Date(dateTime), TIMEZONE, "MMM dd, yyyy HH:mm");
+      // The date is already in GMT+8, so just format it without timezone conversion
+      // Just parse the ISO string and format it
+      const parsedDate = parseISO(dateTime);
+      return format(parsedDate, "MMM dd, yyyy HH:mm");
     } catch (error) {
       console.error("Error formatting date:", error);
       return dateTime;
@@ -146,7 +146,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
     <div className={className}>
       <div className="rounded-md border overflow-x-auto">
         <div className="bg-gray-50 px-4 py-2 text-right text-sm text-gray-500">
-          Showing times in {TIMEZONE_DISPLAY} timezone
+          Times are displayed in {TIMEZONE_DISPLAY} (database native timezone)
         </div>
         <Table className="w-full">
           <TableHeader>
