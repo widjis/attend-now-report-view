@@ -1,4 +1,8 @@
 
+
+import { formatInTimeZone } from "date-fns-tz";
+
+
 import React, { useState } from "react";
 import {
   Table,
@@ -21,6 +25,11 @@ import { format, parseISO } from "date-fns";
 import { AttendanceRecord } from "../types/attendance";
 import { cn } from "@/lib/utils";
 
+
+// Define timezone constant
+const TIMEZONE = "UTC"; // Equivalent to GMT+0
+const TIMEZONE_DISPLAY = "GMT+8";
+
 interface AttendanceTableProps {
   data: AttendanceRecord[];
   isLoading: boolean;
@@ -30,7 +39,7 @@ interface AttendanceTableProps {
   className?: string;
 }
 
-const TIMEZONE_DISPLAY = "GMT+8";
+
 
 const AttendanceTable: React.FC<AttendanceTableProps> = ({
   data,
@@ -55,10 +64,12 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
   const formatDateTime = (dateTime: string | null) => {
     if (!dateTime) return "N/A";
     try {
-      // The date is already in GMT+8, so just format it without timezone conversion
-      // Just parse the ISO string and format it
-      const parsedDate = parseISO(dateTime);
-      return format(parsedDate, "MMM dd, yyyy HH:mm");
+      // Use formatInTimeZone to explicitly format the date in Asia/Singapore timezone (GMT+8)
+      return formatInTimeZone(
+        parseISO(dateTime),  // Parse the ISO string
+        TIMEZONE,           // Explicitly use Asia/Singapore timezone
+        "MMM dd, yyyy HH:mm" // Format pattern
+      );
     } catch (error) {
       console.error("Error formatting date:", error);
       return dateTime;
