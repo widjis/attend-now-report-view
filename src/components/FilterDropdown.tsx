@@ -8,11 +8,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+interface FilterOption {
+  value: string;
+  label: string;
+}
+
 interface FilterDropdownProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  options: string[];
+  options: FilterOption[];
   placeholder?: string;
   className?: string;
 }
@@ -35,10 +40,9 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All {label}s</SelectItem>
           {options.map((option) => (
-            <SelectItem key={option} value={option}>
-              {option}
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
             </SelectItem>
           ))}
         </SelectContent>

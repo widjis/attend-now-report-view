@@ -9,7 +9,7 @@ exports.getFilterOptions = async (req, res, next) => {
     // Get distinct departments
     const departmentsQuery = `
       SELECT DISTINCT Department
-      FROM AttendanceRecords
+      FROM tblAttendanceReport
       WHERE Department IS NOT NULL AND Department <> ''
       ORDER BY Department
     `;
@@ -18,7 +18,7 @@ exports.getFilterOptions = async (req, res, next) => {
     // Get distinct companies
     const companiesQuery = `
       SELECT DISTINCT Company
-      FROM AttendanceRecords
+      FROM tblAttendanceReport
       WHERE Company IS NOT NULL AND Company <> ''
       ORDER BY Company
     `;
@@ -27,7 +27,7 @@ exports.getFilterOptions = async (req, res, next) => {
     // Get distinct card types
     const cardTypesQuery = `
       SELECT DISTINCT CardType
-      FROM AttendanceRecords
+      FROM tblAttendanceReport
       WHERE CardType IS NOT NULL AND CardType <> ''
       ORDER BY CardType
     `;
