@@ -1,3 +1,4 @@
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -6,7 +7,7 @@ const filtersRoutes = require('./routes/filters');
 const { poolPromise } = require('./config/db');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
@@ -17,7 +18,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/filters', filtersRoutes);
 
 // Health check endpoint
-app.get('/api/health', async (req, res) => {
+app.get('/health', async (req, res) => {
   try {
     // Check database connection
     const pool = await poolPromise;
@@ -37,9 +38,25 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Keep original health endpoint for backward compatibility
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
+// Also add the /api/health endpoint for consistency
+app.get('/api/health', async (req, res) => {
+  try {
+    // Check database connection
+    const pool = await poolPromise;
+    const result = await pool.request().query('SELECT 1 as dbConnected');
+    
+    res.status(200).json({ 
+      status: 'ok',
+      database: result.recordset[0].dbConnected === 1 ? 'connected' : 'disconnected',
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      status: 'error',
+      message: 'Database connection failed',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
 });
 
 // Error handling middleware

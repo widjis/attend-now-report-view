@@ -66,7 +66,7 @@ exports.getAttendanceData = async (req, res, next) => {
     // Query for total count
     const countQuery = `
       SELECT COUNT(*) AS total
-      FROM AttendanceRecords
+      FROM tblAttendanceReport
       ${whereClause}
     `;
 
@@ -84,7 +84,7 @@ exports.getAttendanceData = async (req, res, next) => {
     // Query for paginated data
     const dataQuery = `
       SELECT *
-      FROM AttendanceRecords
+      FROM tblAttendanceReport
       ${whereClause}
       ORDER BY TrDateTime DESC
       OFFSET ${offset} ROWS
@@ -133,7 +133,7 @@ exports.getAttendanceSummary = async (req, res, next) => {
         SUM(CASE WHEN ClockEvent = 'Clock Out' THEN 1 ELSE 0 END) AS totalClockOut,
         SUM(CASE WHEN Processed = 1 THEN 1 ELSE 0 END) AS validRecords,
         SUM(CASE WHEN Processed = 0 THEN 1 ELSE 0 END) AS invalidRecords
-      FROM AttendanceRecords
+      FROM tblAttendanceReport
       WHERE TrDate BETWEEN @startDate AND @endDate
     `;
 
@@ -149,7 +149,7 @@ exports.getAttendanceSummary = async (req, res, next) => {
         SUM(CASE WHEN ClockEvent = 'Clock In' THEN 1 ELSE 0 END) AS clockIn,
         SUM(CASE WHEN ClockEvent = 'Clock Out' THEN 1 ELSE 0 END) AS clockOut,
         COUNT(*) AS total
-      FROM AttendanceRecords
+      FROM tblAttendanceReport
       WHERE TrDate BETWEEN @startDate AND @endDate
       GROUP BY TrDate
       ORDER BY TrDate
@@ -169,7 +169,7 @@ exports.getAttendanceSummary = async (req, res, next) => {
           ELSE 'Unknown' 
         END as status,
         COUNT(*) AS count
-      FROM AttendanceRecords
+      FROM tblAttendanceReport
       WHERE TrDate BETWEEN @startDate AND @endDate
       GROUP BY Processed
     `;
@@ -186,7 +186,7 @@ exports.getAttendanceSummary = async (req, res, next) => {
         SUM(CASE WHEN Processed = 1 THEN 1 ELSE 0 END) AS valid,
         SUM(CASE WHEN Processed = 0 THEN 1 ELSE 0 END) AS invalid,
         COUNT(*) AS total
-      FROM AttendanceRecords
+      FROM tblAttendanceReport
       WHERE TrDate BETWEEN @startDate AND @endDate
       GROUP BY TrController
       ORDER BY total DESC

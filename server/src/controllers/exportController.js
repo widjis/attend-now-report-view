@@ -41,7 +41,7 @@ exports.exportToCsv = async (req, res, next) => {
         TrController,
         ClockEvent,
         Processed
-      FROM AttendanceRecords
+      FROM tblAttendanceReport
       WHERE TrDate BETWEEN @startDate AND @endDate
     `;
     
@@ -133,7 +133,7 @@ exports.exportToPdf = async (req, res, next) => {
         TrController,
         ClockEvent,
         CASE WHEN Processed = 1 THEN 'Valid' ELSE 'Invalid' END AS Status
-      FROM AttendanceRecords
+      FROM tblAttendanceReport
       WHERE TrDate BETWEEN @startDate AND @endDate
     `;
     
