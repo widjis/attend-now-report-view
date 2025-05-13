@@ -3,10 +3,10 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchEmployeeSchedule } from "@/api/employeeApi";
 import { EmployeeFilters } from "@/types/employee";
-import { SearchBar } from "./SearchBar";
-import { FilterDropdown } from "./FilterDropdown";
+import SearchBar from "./SearchBar";
+import FilterDropdown from "./FilterDropdown";
 import { getFilterOptions } from "@/api/attendanceApi";
-import { DateRangePicker } from "./DateRangePicker";
+import DateRangePicker from "./DateRangePicker";
 import { format } from "date-fns";
 
 import {
