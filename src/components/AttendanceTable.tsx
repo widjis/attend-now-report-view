@@ -18,6 +18,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { format } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import { AttendanceRecord } from "../types/attendance";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,9 @@ interface AttendanceTableProps {
   onPageChange: (page: number) => void;
   className?: string;
 }
+
+const TIMEZONE = "Asia/Singapore"; // UTC+8
+const TIMEZONE_DISPLAY = "GMT+8";
 
 const AttendanceTable: React.FC<AttendanceTableProps> = ({
   data,
@@ -53,8 +57,10 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
   const formatDateTime = (dateTime: string | null) => {
     if (!dateTime) return "N/A";
     try {
-      return format(new Date(dateTime), "MMM dd, yyyy HH:mm");
+      // Format the date in the specified timezone (UTC+8)
+      return formatInTimeZone(new Date(dateTime), TIMEZONE, "MMM dd, yyyy HH:mm");
     } catch (error) {
+      console.error("Error formatting date:", error);
       return dateTime;
     }
   };
@@ -139,6 +145,9 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
   return (
     <div className={className}>
       <div className="rounded-md border overflow-x-auto">
+        <div className="bg-gray-50 px-4 py-2 text-right text-sm text-gray-500">
+          Showing times in {TIMEZONE_DISPLAY} timezone
+        </div>
         <Table className="w-full">
           <TableHeader>
             <TableRow>
@@ -170,7 +179,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
                 className="cursor-pointer" 
                 onClick={() => handleSort("TrDateTime")}
               >
-                Date & Time{getSortIndicator("TrDateTime")}
+                Date & Time ({TIMEZONE_DISPLAY}){getSortIndicator("TrDateTime")}
               </TableHead>
               <TableHead 
                 className="cursor-pointer" 
