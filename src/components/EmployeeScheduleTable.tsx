@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchEmployeeSchedule } from "@/api/employeeApi";
@@ -225,8 +224,8 @@ export const EmployeeScheduleTable = () => {
     <div className="space-y-4">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <SearchBar
-          value={filters.search || ""}
-          onChange={handleSearch}
+          initialValue={filters.search || ""}
+          onSearch={handleSearch}
           placeholder="Search by name, department, or staff ID..."
         />
 
