@@ -12,6 +12,8 @@ export const fetchScheduleData = async (filters: ScheduleFilters): Promise<TimeS
     // Add all filters to query params
     if (filters.search) params.append('search', filters.search);
     if (filters.department) params.append('department', filters.department);
+    if (filters.timeInStatus && filters.timeInStatus !== 'all') params.append('timeInStatus', filters.timeInStatus);
+    if (filters.timeOutStatus && filters.timeOutStatus !== 'all') params.append('timeOutStatus', filters.timeOutStatus);
     params.append('page', filters.page.toString());
     params.append('pageSize', filters.pageSize.toString());
     
