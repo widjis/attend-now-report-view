@@ -13,6 +13,7 @@ const API_BASE_URL = getApiBaseUrl();
 // Fetch enhanced attendance data with filters
 export const fetchEnhancedAttendanceData = async (filters: EnhancedAttendanceFilters): Promise<EnhancedAttendanceResponse> => {
   try {
+    console.log("Using API base URL:", API_BASE_URL);
     const params = new URLSearchParams();
     
     // Add required date filters
@@ -30,24 +31,48 @@ export const fetchEnhancedAttendanceData = async (filters: EnhancedAttendanceFil
     params.append('page', filters.page.toString());
     params.append('pageSize', filters.pageSize.toString());
     
-    const response = await fetch(`${API_BASE_URL}/enhanced-attendance?${params.toString()}`);
+    const url = `${API_BASE_URL}/enhanced-attendance?${params.toString()}`;
+    console.log("Fetching from URL:", url);
+    
+    const response = await fetch(url);
+    
+    // Log response details for debugging
+    console.log("Response status:", response.status);
+    console.log("Response headers:", [...response.headers.entries()]);
     
     if (!response.ok) {
       let errorMessage = `Error ${response.status}: Failed to fetch attendance data`;
       
-      try {
-        const errorData = await response.json();
-        console.error(`Server error (${response.status}):`, errorData);
-        
-        if (errorData.message) {
-          errorMessage = `Server error: ${errorData.message}`;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          const errorData = await response.json();
+          console.error(`Server error (${response.status}):`, errorData);
+          
+          if (errorData.message) {
+            errorMessage = `Server error: ${errorData.message}`;
+          }
+        } catch (parseError) {
+          const errorText = await response.text();
+          console.error(`Server error (${response.status}), raw response:`, errorText);
         }
-      } catch (parseError) {
+      } else {
+        // Handle non-JSON responses
         const errorText = await response.text();
-        console.error(`Server error (${response.status}):`, errorText);
+        console.error(`Server returned non-JSON response (${response.status}):`, errorText);
+        errorMessage = `Server returned invalid response format`;
       }
       
       throw new Error(errorMessage);
+    }
+    
+    // Verify content type is JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.error("Server returned non-JSON content type:", contentType);
+      const responseText = await response.text();
+      console.error("Response body:", responseText);
+      throw new Error('Server returned non-JSON response');
     }
     
     return await response.json();

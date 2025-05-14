@@ -41,7 +41,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
         </SelectTrigger>
         <SelectContent>
           {options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
+            <SelectItem key={`${label}-${option.value}`} value={option.value}>
               {option.label}
             </SelectItem>
           ))}
