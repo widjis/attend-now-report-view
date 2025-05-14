@@ -1,0 +1,7 @@
+# at project root
+node_modules
+dist
+.vscode
+.DS_Store
+.env.local
+.env
