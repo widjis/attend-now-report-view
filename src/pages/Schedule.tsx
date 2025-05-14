@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Toaster } from "sonner";
@@ -89,6 +88,9 @@ const Schedule = () => {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
+                <label htmlFor="search-field" className="text-sm font-medium mb-1 block">
+                  Search
+                </label>
                 <SearchBar 
                   initialValue={searchTerm} 
                   onSearch={setSearchTerm} 
