@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { format, subDays } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
@@ -14,7 +13,7 @@ import AttendanceTable from "@/components/AttendanceTable";
 import { DateRange } from "react-day-picker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChartBarIcon } from "lucide-react";
+import { ChartBarIcon, Clock } from "lucide-react";
 
 // API and Types
 import { 
@@ -98,12 +97,20 @@ const Index = () => {
               View and export attendance records from the database
             </p>
           </div>
-          <Link to="/dashboard">
-            <Button variant="outline" className="flex items-center gap-2">
-              <ChartBarIcon size={16} />
-              <span>View Dashboard</span>
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link to="/schedule">
+              <Button variant="outline" className="flex items-center gap-2">
+                <Clock size={16} />
+                <span>Time Scheduling</span>
+              </Button>
+            </Link>
+            <Link to="/dashboard">
+              <Button variant="outline" className="flex items-center gap-2">
+                <ChartBarIcon size={16} />
+                <span>View Dashboard</span>
+              </Button>
+            </Link>
+          </div>
         </header>
 
         <Card className="mb-6">
