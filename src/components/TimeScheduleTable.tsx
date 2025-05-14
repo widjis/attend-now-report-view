@@ -20,6 +20,7 @@ import {
 import { TimeSchedule } from "../types/schedule";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 
 interface TimeScheduleTableProps {
   data: TimeSchedule[];
@@ -52,15 +53,13 @@ const TimeScheduleTable: React.FC<TimeScheduleTableProps> = ({
 
   const formatClockTime = (timeString: string | null): string => {
     if (!timeString) return "N/A";
-    
-    try {
-      // Parse the time string and format it to HH:MM format
-      const date = new Date(timeString);
-      return format(date, "HH:mm");
-    } catch (error) {
-      console.error(`Error formatting time: ${timeString}`, error);
-      return timeString || "N/A"; // Return original string if parsing fails
+    // Assume timeString is in ISO format or 'YYYY-MM-DD HH:mm:ss', extract time part
+    // Try to extract HH:mm from the string
+    const match = timeString.match(/(\d{2}):(\d{2})/);
+    if (match) {
+      return `${match[1]}:${match[2]}`;
     }
+    return timeString;
   };
 
   // Display skeleton loader while loading
