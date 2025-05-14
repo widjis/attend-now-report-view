@@ -89,13 +89,13 @@ const EnhancedAttendanceTable: React.FC<EnhancedAttendanceTableProps> = ({
   // Format time
   const formatTime = (timeString: string | null): string => {
     if (!timeString) return "N/A";
-    try {
-      // Try to parse as date
-      const date = new Date(timeString);
-      return format(date, "HH:mm");
-    } catch (e) {
-      return timeString;
+    // Assume timeString is in ISO format or 'YYYY-MM-DD HH:mm:ss', extract time part
+    // Try to extract HH:mm from the string
+    const match = timeString.match(/(\d{2}):(\d{2})/);
+    if (match) {
+      return `${match[1]}:${match[2]}`;
     }
+    return timeString;
   };
 
   // Format date
