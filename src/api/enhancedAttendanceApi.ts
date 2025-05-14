@@ -2,7 +2,13 @@
 import { toast } from "sonner";
 import { EnhancedAttendanceFilters, EnhancedAttendanceResponse } from "@/types/enhancedAttendance";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// Get API base URL based on environment configuration
+const getApiBaseUrl = () => {
+  const useRelativeUrl = import.meta.env.VITE_USE_RELATIVE_API_URL === 'true';
+  return useRelativeUrl ? '/api' : import.meta.env.VITE_API_BASE_URL;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Fetch enhanced attendance data with filters
 export const fetchEnhancedAttendanceData = async (filters: EnhancedAttendanceFilters): Promise<EnhancedAttendanceResponse> => {

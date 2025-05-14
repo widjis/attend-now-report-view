@@ -1,9 +1,13 @@
-
 import { AttendanceFilters, AttendanceResponse, AttendanceSummary } from "../types/attendance";
 import { toast } from "sonner";
 
-// Base API URL from environment variables
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+// Get API base URL based on environment configuration
+const getApiBaseUrl = () => {
+  const useRelativeUrl = import.meta.env.VITE_USE_RELATIVE_API_URL === 'true';
+  return useRelativeUrl ? '/api' : import.meta.env.VITE_API_BASE_URL;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Mock data generator function for fallback
 const generateMockAttendanceData = (filters: AttendanceFilters): AttendanceResponse => {
@@ -131,7 +135,11 @@ const generateMockSummaryData = (startDate: string, endDate: string): Attendance
 // Check if backend is available
 const checkBackendAvailability = async (): Promise<boolean> => {
   try {
-    const response = await fetch(`${API_BASE_URL.replace('/api', '')}/health`, {
+    // For relative URLs, we need to extract the health endpoint differently
+    const useRelativeUrl = import.meta.env.VITE_USE_RELATIVE_API_URL === 'true';
+    const healthEndpoint = useRelativeUrl ? '/health' : `${API_BASE_URL.replace('/api', '')}/health`;
+    
+    const response = await fetch(healthEndpoint, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       signal: AbortSignal.timeout(5000) // 5 second timeout
