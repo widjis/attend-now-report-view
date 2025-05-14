@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { format, subDays } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
@@ -120,8 +121,10 @@ const Index = () => {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
               <DateRangePicker 
-                dateRange={dateRange} 
-                onDateRangeChange={setDateRange} 
+                startDate={dateRange?.from || subDays(today, 7)}
+                endDate={dateRange?.to || today}
+                onStartDateChange={(date) => setDateRange(range => ({ ...range, from: date }))}
+                onEndDateChange={(date) => setDateRange(range => ({ ...range, to: date }))}
               />
 
               <div className="lg:col-span-2">
