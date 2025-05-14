@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const attendanceRoutes = require('./routes/attendance');
+const scheduleRoutes = require('./routes/schedule');
 const filtersRoutes = require('./routes/filters');
 const { poolPromise } = require('./config/db');
 
@@ -15,6 +16,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/schedule', scheduleRoutes);
 app.use('/api/filters', filtersRoutes);
 
 // Health check endpoint
