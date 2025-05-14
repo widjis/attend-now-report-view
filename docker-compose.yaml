@@ -19,6 +19,6 @@ services:
         VITE_USE_RELATIVE_API_URL: ${VITE_USE_RELATIVE_API_URL}
     image: attend-frontend:latest
     ports:
-      - "8080:80"
+      - "9000:80"
     depends_on:
       - backend
