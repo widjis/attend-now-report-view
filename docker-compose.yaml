@@ -1,0 +1,31 @@
+version: "3.9"
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    image: attend-backend:latest
+    env_file:
+      - server/.env
+    ports:
+      - "5000:5000"
+    # networks:
+    #   - appnet
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    image: attend-frontend:latest
+    ports:
+      - "8080:80"
+    # if you want to override API url at runtime instead of build time:
+    # environment:
+    #   - VITE_API_BASE_URL=http://backend:5000/api
+    #   - VITE_USE_RELATIVE_API_URL=false
+    # networks:
+    #   - appnet
+
+#networks:
+#  appnet:
+#    driver: bridge
