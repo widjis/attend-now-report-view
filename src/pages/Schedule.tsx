@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Toaster } from "sonner";
@@ -85,15 +84,9 @@ const Schedule = () => {
             </p>
           </div>
           <div className="flex gap-2">
-            <Link to="/enhanced-attendance">
-              <Button variant="outline" className="flex items-center gap-2">
-                <CalendarClock size={16} />
-                <span>Enhanced Attendance</span>
-              </Button>
-            </Link>
             <Link to="/">
               <Button variant="outline" className="flex items-center gap-2">
-                <ClipboardList size={16} />
+                <CalendarClock size={16} />
                 <span>Attendance Report</span>
               </Button>
             </Link>

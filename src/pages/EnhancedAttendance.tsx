@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Toaster } from "sonner";
@@ -10,7 +9,7 @@ import SearchBar from "@/components/SearchBar";
 import FilterDropdown from "@/components/FilterDropdown";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ClipboardList, ChartBarIcon, Calendar } from "lucide-react";
+import { ChartBarIcon, Calendar } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import DateRangePicker from "@/components/DateRangePicker";
 
@@ -103,7 +102,7 @@ const EnhancedAttendance = () => {
       <div className="max-w-7xl mx-auto">
         <header className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Enhanced Attendance Report</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Attendance Report</h1>
             <p className="text-gray-500 mt-1">
               View combined schedule and actual attendance data
             </p>
@@ -113,12 +112,6 @@ const EnhancedAttendance = () => {
               <Button variant="outline" className="flex items-center gap-2">
                 <Calendar size={16} />
                 <span>Time Schedule</span>
-              </Button>
-            </Link>
-            <Link to="/">
-              <Button variant="outline" className="flex items-center gap-2">
-                <ClipboardList size={16} />
-                <span>Attendance Report</span>
               </Button>
             </Link>
             <Link to="/dashboard">

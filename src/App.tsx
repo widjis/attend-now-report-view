@@ -20,7 +20,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Navigate to="/enhanced-attendance" replace />} />
-          <Route path="/attendance-report" element={<Index />} />
+          {/* Hide the attendance-report route by commenting it out */}
+          {/* <Route path="/attendance-report" element={<Index />} /> */}
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/enhanced-attendance" element={<EnhancedAttendance />} />

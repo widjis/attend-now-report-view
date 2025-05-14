@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { format, subDays, subMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
@@ -72,12 +71,20 @@ const Dashboard = () => {
               Summary of attendance records and analytics
             </p>
           </div>
-          <Link to="/">
-            <Button variant="outline" className="flex items-center gap-2">
-              <Calendar size={16} />
-              <span>View Full Report</span>
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link to="/">
+              <Button variant="outline" className="flex items-center gap-2">
+                <Calendar size={16} />
+                <span>View Attendance</span>
+              </Button>
+            </Link>
+            <Link to="/schedule">
+              <Button variant="outline" className="flex items-center gap-2">
+                <ClockIcon size={16} />
+                <span>Time Schedule</span>
+              </Button>
+            </Link>
+          </div>
         </header>
         
         <Tabs defaultValue="week" className="w-full" onValueChange={(value) => setTimeframe(value as AttendanceTimeframe)}>
