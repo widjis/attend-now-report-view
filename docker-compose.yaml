@@ -8,8 +8,6 @@ services:
       - server/.env
     ports:
       - "5000:5000"
-    networks:
-      - appnet
 
   frontend:
     build:
@@ -23,9 +21,5 @@ services:
       - "9000:80"      # or whichever free host port you chose
     depends_on:
       - backend
-    networks:
-      - appnet
 
-networks:
-  appnet:
-    driver: bridge
+# No `networks:` section at all

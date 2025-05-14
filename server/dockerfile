@@ -5,9 +5,10 @@ WORKDIR /usr/src/app
 COPY server/package.json server/package-lock.json ./
 RUN npm ci --production
 
-# copy source + env
+# copy source code only
 COPY server/src ./src
-COPY server/.env ./.env      # PORT=5000 etc.
 
 EXPOSE 5000
-CMD ["npm", "start"]          # runs `node src/server.js`
+
+# run your server.js directly with node
+CMD ["node", "src/server.js"]
