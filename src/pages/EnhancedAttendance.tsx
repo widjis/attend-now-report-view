@@ -5,26 +5,39 @@ import { Toaster } from "sonner";
 import { Link } from "react-router-dom";
 
 // Components
-import TimeScheduleTable from "@/components/TimeScheduleTable";
+import EnhancedAttendanceTable from "@/components/EnhancedAttendanceTable";
 import SearchBar from "@/components/SearchBar";
 import FilterDropdown from "@/components/FilterDropdown";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChartBarIcon, ClipboardList, CalendarClock } from "lucide-react";
+import { ClipboardList, ChartBarIcon, Calendar } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import DateRangePicker from "@/components/DateRangePicker";
 
 // API and Types
-import { fetchScheduleData } from "@/api/scheduleApi";
+import { fetchEnhancedAttendanceData } from "@/api/enhancedAttendanceApi";
 import { getFilterOptions } from "@/api/attendanceApi";
-import { ScheduleFilters } from "@/types/schedule";
+import { EnhancedAttendanceFilters } from "@/types/enhancedAttendance";
 
-const Schedule = () => {
+const EnhancedAttendance = () => {
+  // Get today's date and 7 days ago for default date range
+  const today = new Date();
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  
+  // Format dates for API
+  const formatDateForApi = (date: Date): string => {
+    return date.toISOString().split('T')[0];
+  };
+  
   // State for filters
+  const [startDate, setStartDate] = useState<Date>(sevenDaysAgo);
+  const [endDate, setEndDate] = useState<Date>(today);
   const [searchTerm, setSearchTerm] = useState("");
   const [department, setDepartment] = useState("all");
-  const [timeInStatus, setTimeInStatus] = useState<"available" | "unavailable" | "all">("all");
-  const [timeOutStatus, setTimeOutStatus] = useState<"available" | "unavailable" | "all">("all");
+  const [scheduleType, setScheduleType] = useState<"Fixed" | "Shift1" | "Shift2" | "Shift3" | "All">("All");
+  const [clockInStatus, setClockInStatus] = useState<"Early" | "OnTime" | "Late" | "Missing" | "All">("All");
+  const [clockOutStatus, setClockOutStatus] = useState<"Early" | "OnTime" | "Late" | "Missing" | "All">("All");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   
@@ -35,30 +48,30 @@ const Schedule = () => {
   });
   
   // Build filters object for API call
-  const buildFilters = (): ScheduleFilters => {
+  const buildFilters = (): EnhancedAttendanceFilters => {
     return {
+      startDate: formatDateForApi(startDate),
+      endDate: formatDateForApi(endDate),
       search: searchTerm,
       department: department === "all" ? undefined : department,
-      timeInStatus,
-      timeOutStatus,
+      scheduleType,
+      clockInStatus,
+      clockOutStatus,
       page,
       pageSize,
     };
   };
 
-  // Fetch schedule data
+  // Fetch enhanced attendance data
   const { data, isLoading } = useQuery({
-    queryKey: ["schedule", buildFilters()],
-    queryFn: () => fetchScheduleData(buildFilters()),
+    queryKey: ["enhancedAttendance", buildFilters()],
+    queryFn: () => fetchEnhancedAttendanceData(buildFilters()),
   });
 
   // Handle filter changes
   React.useEffect(() => {
     setPage(1); // Reset to first page when filters change
-  }, [searchTerm, department, timeInStatus, timeOutStatus, pageSize]);
-
-  // Calculate total pages
-  const totalPages = data ? Math.ceil(data.total / pageSize) : 0;
+  }, [startDate, endDate, searchTerm, department, scheduleType, clockInStatus, clockOutStatus, pageSize]);
 
   // Handle page size change
   const handlePageSizeChange = (value: string) => {
@@ -67,9 +80,20 @@ const Schedule = () => {
 
   // Status filter options
   const statusOptions = [
-    { value: "all", label: "All" },
-    { value: "available", label: "Available" },
-    { value: "unavailable", label: "Not Available" },
+    { value: "All", label: "All Statuses" },
+    { value: "Early", label: "Early" },
+    { value: "OnTime", label: "On Time" },
+    { value: "Late", label: "Late" },
+    { value: "Missing", label: "Missing" },
+  ];
+
+  // Schedule type options
+  const scheduleTypeOptions = [
+    { value: "All", label: "All Schedules" },
+    { value: "Fixed", label: "Fixed (7-17)" },
+    { value: "Shift1", label: "Shift 1" },
+    { value: "Shift2", label: "Shift 2" },
+    { value: "Shift3", label: "Shift 3" },
   ];
 
   return (
@@ -79,16 +103,16 @@ const Schedule = () => {
       <div className="max-w-7xl mx-auto">
         <header className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Time Scheduling</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Enhanced Attendance Report</h1>
             <p className="text-gray-500 mt-1">
-              View employee time schedules
+              View combined schedule and actual attendance data
             </p>
           </div>
           <div className="flex gap-2">
-            <Link to="/enhanced-attendance">
+            <Link to="/schedule">
               <Button variant="outline" className="flex items-center gap-2">
-                <CalendarClock size={16} />
-                <span>Enhanced Attendance</span>
+                <Calendar size={16} />
+                <span>Time Schedule</span>
               </Button>
             </Link>
             <Link to="/">
@@ -111,7 +135,19 @@ const Schedule = () => {
             <CardTitle className="text-lg">Filters</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label htmlFor="date-range" className="text-sm font-medium mb-1 block">
+                  Date Range
+                </label>
+                <DateRangePicker
+                  startDate={startDate}
+                  endDate={endDate}
+                  onStartDateChange={setStartDate}
+                  onEndDateChange={setEndDate}
+                />
+              </div>
+
               <div>
                 <label htmlFor="search-field" className="text-sm font-medium mb-1 block">
                   Search
@@ -119,6 +155,7 @@ const Schedule = () => {
                 <SearchBar 
                   initialValue={searchTerm} 
                   onSearch={setSearchTerm} 
+                  placeholder="Search by name or ID..."
                 />
               </div>
 
@@ -130,18 +167,23 @@ const Schedule = () => {
                   options={filterOptions?.departments || []}
                 />
               </div>
-
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label htmlFor="time-in-status" className="text-sm font-medium mb-1 block">
-                  Time In Status
+                <label htmlFor="schedule-type" className="text-sm font-medium mb-1 block">
+                  Schedule Type
                 </label>
-                <Select value={timeInStatus} onValueChange={(value: "available" | "unavailable" | "all") => setTimeInStatus(value)}>
-                  <SelectTrigger id="time-in-status">
-                    <SelectValue placeholder="Select status" />
+                <Select 
+                  value={scheduleType} 
+                  onValueChange={(value: "Fixed" | "Shift1" | "Shift2" | "Shift3" | "All") => setScheduleType(value)}
+                >
+                  <SelectTrigger id="schedule-type">
+                    <SelectValue placeholder="Select schedule type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {statusOptions.map((option) => (
-                      <SelectItem key={`time-in-${option.value}`} value={option.value}>
+                    {scheduleTypeOptions.map((option) => (
+                      <SelectItem key={`schedule-${option.value}`} value={option.value}>
                         {option.label}
                       </SelectItem>
                     ))}
@@ -150,16 +192,40 @@ const Schedule = () => {
               </div>
 
               <div>
-                <label htmlFor="time-out-status" className="text-sm font-medium mb-1 block">
-                  Time Out Status
+                <label htmlFor="clock-in-status" className="text-sm font-medium mb-1 block">
+                  Clock In Status
                 </label>
-                <Select value={timeOutStatus} onValueChange={(value: "available" | "unavailable" | "all") => setTimeOutStatus(value)}>
-                  <SelectTrigger id="time-out-status">
+                <Select 
+                  value={clockInStatus}
+                  onValueChange={(value: "Early" | "OnTime" | "Late" | "Missing" | "All") => setClockInStatus(value)}
+                >
+                  <SelectTrigger id="clock-in-status">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
                     {statusOptions.map((option) => (
-                      <SelectItem key={`time-out-${option.value}`} value={option.value}>
+                      <SelectItem key={`clock-in-${option.value}`} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label htmlFor="clock-out-status" className="text-sm font-medium mb-1 block">
+                  Clock Out Status
+                </label>
+                <Select 
+                  value={clockOutStatus}
+                  onValueChange={(value: "Early" | "OnTime" | "Late" | "Missing" | "All") => setClockOutStatus(value)}
+                >
+                  <SelectTrigger id="clock-out-status">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map((option) => (
+                      <SelectItem key={`clock-out-${option.value}`} value={option.value}>
                         {option.label}
                       </SelectItem>
                     ))}
@@ -173,32 +239,7 @@ const Schedule = () => {
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center flex-wrap gap-y-2">
-              <div className="flex items-center gap-4">
-                <CardTitle className="text-lg">Employee Schedule</CardTitle>
-                
-                <div className="flex items-center gap-2">
-                  {data?.timeInStats && (
-                    <>
-                      <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800">
-                        Time In Available: {data.timeInStats.available}
-                      </Badge>
-                      <Badge variant="outline" className="bg-yellow-50 text-yellow-700 hover:bg-yellow-100 hover:text-yellow-800">
-                        Time In Unavailable: {data.timeInStats.unavailable}
-                      </Badge>
-                    </>
-                  )}
-                  {data?.timeOutStats && (
-                    <>
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800">
-                        Time Out Available: {data.timeOutStats.available}
-                      </Badge>
-                      <Badge variant="outline" className="bg-orange-50 text-orange-700 hover:bg-orange-100 hover:text-orange-800">
-                        Time Out Unavailable: {data.timeOutStats.unavailable}
-                      </Badge>
-                    </>
-                  )}
-                </div>
-              </div>
+              <CardTitle className="text-lg">Attendance Records</CardTitle>
               
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
@@ -223,18 +264,18 @@ const Schedule = () => {
                 
                 <div className="text-sm text-gray-500">
                   {data && !isLoading ? 
-                    `Showing ${(page - 1) * pageSize + 1}-${Math.min(page * pageSize, data.total)} of ${data.total} records` : 
+                    `Showing ${data.total > 0 ? (page - 1) * pageSize + 1 : 0}-${Math.min(page * pageSize, data.total)} of ${data.total} records` : 
                     'Loading records...'}
                 </div>
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <TimeScheduleTable 
+            <EnhancedAttendanceTable 
               data={data?.data || []}
               isLoading={isLoading}
               currentPage={page}
-              totalPages={totalPages}
+              totalPages={data?.totalPages || 1}
               onPageChange={setPage}
             />
           </CardContent>
@@ -244,4 +285,4 @@ const Schedule = () => {
   );
 };
 
-export default Schedule;
+export default EnhancedAttendance;
