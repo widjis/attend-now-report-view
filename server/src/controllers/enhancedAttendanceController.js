@@ -99,32 +99,32 @@ exports.getEnhancedAttendanceData = async (req, res, next) => {
       { name: 'startDate', value: startDate },
       { name: 'endDate', value: endDate }
     ];
-    let paramIndex = 3;
     
     // Add search filter if provided
     if (search) {
       whereClause += whereClause ? ' AND ' : ' WHERE ';
-      whereClause += `(s.StaffNo LIKE @p${paramIndex} OR s.Name LIKE @p${paramIndex})`;
-      queryParams.push({ name: `p${paramIndex++}`, value: `%${search}%` });
+      whereClause += `(s.StaffNo LIKE @search OR s.Name LIKE @search)`;
+      queryParams.push({ name: 'search', value: `%${search}%` });
     }
     
     // Add department filter if provided
     if (department && department !== 'all') {
       whereClause += whereClause ? ' AND ' : ' WHERE ';
-      whereClause += `s.Department = @p${paramIndex}`;
-      queryParams.push({ name: `p${paramIndex++}`, value: department });
+      whereClause += `s.Department = @department`;
+      queryParams.push({ name: 'department', value: department });
     }
     
     // Add schedule type filter if provided
     if (scheduleType && scheduleType !== 'All') {
       whereClause += whereClause ? ' AND ' : ' WHERE ';
-      whereClause += `s.ScheduleType = @p${paramIndex}`;
-      queryParams.push({ name: `p${paramIndex++}`, value: scheduleType });
+      whereClause += `s.ScheduleType = @scheduleType`;
+      queryParams.push({ name: 'scheduleType', value: scheduleType });
     }
     
     // Add clock in status filter if provided
     if (clockInStatus && clockInStatus !== 'All') {
       whereClause += whereClause ? ' AND ' : ' WHERE ';
+      
       if (clockInStatus === 'Missing') {
         whereClause += `a.ActualClockIn IS NULL`;
       } else if (clockInStatus === 'Early') {
@@ -142,6 +142,7 @@ exports.getEnhancedAttendanceData = async (req, res, next) => {
     // Add clock out status filter if provided
     if (clockOutStatus && clockOutStatus !== 'All') {
       whereClause += whereClause ? ' AND ' : ' WHERE ';
+      
       if (clockOutStatus === 'Missing') {
         whereClause += `a.ActualClockOut IS NULL`;
       } else if (clockOutStatus === 'Early') {
@@ -159,13 +160,13 @@ exports.getEnhancedAttendanceData = async (req, res, next) => {
     // Count query with filters
     const countQuery = `
       SELECT COUNT(*) AS total
-      FROM (${baseQuery}${whereClause}) AS FilteredData
+      FROM (${baseQuery} ${whereClause}) AS FilteredData
     `;
     
     // Data query with filters and pagination
     const dataQuery = `
       SELECT *
-      FROM (${baseQuery}${whereClause}) AS FilteredData
+      FROM (${baseQuery} ${whereClause}) AS FilteredData
       ORDER BY Date DESC, Name
       OFFSET ${offset} ROWS
       FETCH NEXT ${pageSize} ROWS ONLY

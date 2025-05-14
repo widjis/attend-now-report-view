@@ -27,6 +27,8 @@ export const fetchEnhancedAttendanceData = async (filters: EnhancedAttendanceFil
     const response = await fetch(`${API_BASE_URL}/enhanced-attendance?${params.toString()}`);
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Server error (${response.status}):`, errorText);
       throw new Error(`Error fetching enhanced attendance data: ${response.status}`);
     }
     
@@ -34,6 +36,13 @@ export const fetchEnhancedAttendanceData = async (filters: EnhancedAttendanceFil
   } catch (error) {
     console.error('Failed to fetch enhanced attendance data:', error);
     toast.error('Failed to load enhanced attendance data. Please try again.');
-    return { data: [], total: 0, page: filters.page, pageSize: filters.pageSize, totalPages: 0 };
+    // Return empty data to prevent UI crashes
+    return { 
+      data: [], 
+      total: 0, 
+      page: filters.page, 
+      pageSize: filters.pageSize, 
+      totalPages: 0 
+    };
   }
 };
