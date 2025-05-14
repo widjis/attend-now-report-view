@@ -8,24 +8,31 @@ ARG VITE_USE_RELATIVE_API_URL
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 ENV VITE_USE_RELATIVE_API_URL=${VITE_USE_RELATIVE_API_URL}
 
-# deps
+# install dependencies
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# source + config + entrypoint
+# copy source, entrypoint, and config files
 COPY public ./public
 COPY src ./src
-COPY vite.config.ts tsconfig*.json ./
 COPY index.html ./
+COPY vite.config.ts tsconfig*.json ./
 
-# build
+# ← Add your PostCSS and Tailwind configs here:
+COPY postcss.config.js ./
+COPY tailwind.config.ts ./
+
+# build static assets (includes compiling Tailwind)
 RUN npm run build
 
 # ── Serve Stage ───────────────────────────────────────────
 FROM nginx:1.25-alpine
 WORKDIR /usr/share/nginx/html
 
+# copy built assets
 COPY --from=builder /app/dist ./
+
+# custom nginx config
 COPY nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 80
