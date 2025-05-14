@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Toaster } from "sonner";
@@ -10,6 +11,7 @@ import FilterDropdown from "@/components/FilterDropdown";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChartBarIcon, ClipboardList } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // API and Types
 import { fetchScheduleData } from "@/api/scheduleApi";
@@ -21,7 +23,7 @@ const Schedule = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [department, setDepartment] = useState("all");
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(10);
   
   // Get filter options from API
   const { data: filterOptions } = useQuery({
@@ -48,10 +50,15 @@ const Schedule = () => {
   // Handle filter changes
   React.useEffect(() => {
     setPage(1); // Reset to first page when filters change
-  }, [searchTerm, department]);
+  }, [searchTerm, department, pageSize]);
 
   // Calculate total pages
   const totalPages = data ? Math.ceil(data.total / pageSize) : 0;
+
+  // Handle page size change
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(parseInt(value));
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
@@ -113,10 +120,32 @@ const Schedule = () => {
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle className="text-lg">Employee Schedule</CardTitle>
-              <div className="text-sm text-gray-500">
-                {data && !isLoading ? 
-                  `Showing ${(page - 1) * pageSize + 1}-${Math.min(page * pageSize, data.total)} of ${data.total} records` : 
-                  'Loading records...'}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <label htmlFor="page-size" className="text-sm text-gray-600 whitespace-nowrap">
+                    Items per page:
+                  </label>
+                  <Select
+                    value={pageSize.toString()}
+                    onValueChange={handlePageSizeChange}
+                  >
+                    <SelectTrigger id="page-size" className="w-20 h-8">
+                      <SelectValue placeholder="10" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                      <SelectItem value="200">200</SelectItem>
+                      <SelectItem value="500">500</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="text-sm text-gray-500">
+                  {data && !isLoading ? 
+                    `Showing ${(page - 1) * pageSize + 1}-${Math.min(page * pageSize, data.total)} of ${data.total} records` : 
+                    'Loading records...'}
+                </div>
               </div>
             </div>
           </CardHeader>

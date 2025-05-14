@@ -105,6 +105,7 @@ const TimeScheduleTable: React.FC<TimeScheduleTableProps> = ({
     );
   }
 
+  // Sort data if a sort column is selected
   const sortedData = [...data];
   if (sortColumn) {
     sortedData.sort((a, b) => {
@@ -194,58 +195,61 @@ const TimeScheduleTable: React.FC<TimeScheduleTableProps> = ({
         </Table>
       </div>
 
-      <Pagination className="mt-4">
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious
-              className={cn(currentPage === 1 && "pointer-events-none opacity-50")}
-              onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
-            />
-          </PaginationItem>
-          
-          {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
-            let pageNumber: number;
+      {totalPages > 1 && (
+        <Pagination className="mt-4">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                className={cn(currentPage === 1 && "pointer-events-none opacity-50")}
+                onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
+              />
+            </PaginationItem>
             
-            if (totalPages <= 5) {
-              pageNumber = i + 1;
-            } else if (currentPage <= 3) {
-              pageNumber = i + 1;
-            } else if (currentPage >= totalPages - 2) {
-              pageNumber = totalPages - 4 + i;
-            } else {
-              pageNumber = currentPage - 2 + i;
-            }
+            {/* Adjust pagination rendering for different page sizes */}
+            {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+              let pageNumber: number;
+              
+              if (totalPages <= 5) {
+                pageNumber = i + 1;
+              } else if (currentPage <= 3) {
+                pageNumber = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                pageNumber = totalPages - 4 + i;
+              } else {
+                pageNumber = currentPage - 2 + i;
+              }
+              
+              if (pageNumber === 1 || pageNumber === totalPages || 
+                (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)) {
+                return (
+                  <PaginationItem key={pageNumber}>
+                    <PaginationLink
+                      isActive={pageNumber === currentPage}
+                      onClick={() => onPageChange(pageNumber)}
+                    >
+                      {pageNumber}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              } else if (pageNumber === currentPage - 2 || pageNumber === currentPage + 2) {
+                return (
+                  <PaginationItem key={`ellipsis-${pageNumber}`}>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                );
+              }
+              return null;
+            })}
             
-            if (pageNumber === 1 || pageNumber === totalPages || 
-               (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)) {
-              return (
-                <PaginationItem key={pageNumber}>
-                  <PaginationLink
-                    isActive={pageNumber === currentPage}
-                    onClick={() => onPageChange(pageNumber)}
-                  >
-                    {pageNumber}
-                  </PaginationLink>
-                </PaginationItem>
-              );
-            } else if (pageNumber === currentPage - 2 || pageNumber === currentPage + 2) {
-              return (
-                <PaginationItem key={`ellipsis-${pageNumber}`}>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              );
-            }
-            return null;
-          })}
-          
-          <PaginationItem>
-            <PaginationNext
-              className={cn(currentPage === totalPages && "pointer-events-none opacity-50")}
-              onClick={() => currentPage < totalPages && onPageChange(currentPage + 1)}
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
+            <PaginationItem>
+              <PaginationNext
+                className={cn(currentPage === totalPages && "pointer-events-none opacity-50")}
+                onClick={() => currentPage < totalPages && onPageChange(currentPage + 1)}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   );
 };
