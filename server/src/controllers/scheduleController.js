@@ -12,7 +12,7 @@ exports.getScheduleData = async (req, res, next) => {
     const offset = (page - 1) * pageSize;
     
     // Build the base query
-    let countQuery = `SELECT COUNT(*) AS total FROM CardDBTimeSchedule WHERE 1=1`;
+    let countQuery = `SELECT COUNT(*) AS total FROM CardDBTimeSchedule WHERE 1=1 AND StaffNo IS NOT NULL AND StaffNo <> '' AND StaffNo LIKE '%MTI%'`;
     let dataQuery = `
       SELECT 
         StaffNo,
@@ -22,7 +22,7 @@ exports.getScheduleData = async (req, res, next) => {
         Email,
         Department
       FROM CardDBTimeSchedule
-      WHERE 1=1
+      WHERE 1=1 AND StaffNo IS NOT NULL AND StaffNo <> '' AND StaffNo LIKE '%MTI%'
     `;
     
     const queryParams = [];
