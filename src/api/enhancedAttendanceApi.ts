@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { EnhancedAttendanceFilters, EnhancedAttendanceResponse } from "@/types/enhancedAttendance";
 
@@ -101,6 +100,22 @@ export async function exportEnhancedAttendanceCsv(params: Record<string, string 
   });
   if (!response.ok) {
     throw new Error('Failed to export CSV');
+  }
+  const blob = await response.blob();
+  return blob;
+}
+
+export async function exportEnhancedAttendancePdf(params: Record<string, string | number | undefined>) {
+  const query = new URLSearchParams(params as Record<string, string>).toString();
+  const url = `${API_BASE_URL}/enhanced-attendance/export/pdf?${query}`;
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/pdf',
+    },
+  });
+  if (!response.ok) {
+    throw new Error('Failed to export PDF');
   }
   const blob = await response.blob();
   return blob;

@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import { Link } from "react-router-dom";
 
 // Components
 import EnhancedAttendanceTable from "@/components/EnhancedAttendanceTable";
 import SearchBar from "@/components/SearchBar";
 import FilterDropdown from "@/components/FilterDropdown";
+import ExportButton from "@/components/ExportButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChartBarIcon, Calendar } from "lucide-react";
@@ -14,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import DateRangePicker from "@/components/DateRangePicker";
 
 // API and Types
-import { fetchEnhancedAttendanceData } from "@/api/enhancedAttendanceApi";
+import { fetchEnhancedAttendanceData, exportEnhancedAttendanceCsv, exportEnhancedAttendancePdf } from "@/api/enhancedAttendanceApi";
 import { getFilterOptions } from "@/api/attendanceApi";
 import { EnhancedAttendanceFilters } from "@/types/enhancedAttendance";
 
@@ -39,6 +40,7 @@ const EnhancedAttendance = () => {
   const [clockOutStatus, setClockOutStatus] = useState<"Early" | "OnTime" | "Late" | "Missing" | "All">("All");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [isExporting, setIsExporting] = useState(false);
   
   // Get filter options from API
   const { data: filterOptions } = useQuery({
@@ -75,6 +77,57 @@ const EnhancedAttendance = () => {
   // Handle page size change
   const handlePageSizeChange = (value: string) => {
     setPageSize(parseInt(value));
+  };
+
+  // Handle export
+  const handleExport = async (format: "csv" | "pdf") => {
+    try {
+      setIsExporting(true);
+      
+      // Build export parameters (without pagination)
+      const exportParams = {
+        startDate: formatDateForApi(startDate),
+        endDate: formatDateForApi(endDate),
+        search: searchTerm || undefined,
+        department: department === "all" ? undefined : department,
+        scheduleType: scheduleType === "All" ? undefined : scheduleType,
+        clockInStatus: clockInStatus === "All" ? undefined : clockInStatus,
+        clockOutStatus: clockOutStatus === "All" ? undefined : clockOutStatus,
+      };
+
+      // Remove undefined values
+      const cleanParams = Object.fromEntries(
+        Object.entries(exportParams).filter(([_, value]) => value !== undefined)
+      );
+
+      let blob: Blob;
+      let filename: string;
+      
+      if (format === "csv") {
+        blob = await exportEnhancedAttendanceCsv(cleanParams);
+        filename = `enhanced-attendance-${formatDateForApi(startDate)}-to-${formatDateForApi(endDate)}.csv`;
+      } else {
+        blob = await exportEnhancedAttendancePdf(cleanParams);
+        filename = `enhanced-attendance-${formatDateForApi(startDate)}-to-${formatDateForApi(endDate)}.pdf`;
+      }
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success(`${format.toUpperCase()} export completed successfully`);
+    } catch (error) {
+      console.error(`Export ${format} failed:`, error);
+      toast.error(`Failed to export ${format.toUpperCase()}. Please try again.`);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // Status filter options
@@ -235,6 +288,12 @@ const EnhancedAttendance = () => {
               <CardTitle className="text-lg">Attendance Records</CardTitle>
               
               <div className="flex items-center gap-3">
+                <ExportButton 
+                  onExport={handleExport}
+                  isLoading={isExporting}
+                  disabled={!data || data.total === 0}
+                />
+                
                 <div className="flex items-center gap-2">
                   <label htmlFor="page-size" className="text-sm text-gray-600 whitespace-nowrap">
                     Items per page:
