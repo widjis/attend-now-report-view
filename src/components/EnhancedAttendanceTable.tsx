@@ -49,7 +49,8 @@ const EnhancedAttendanceTable: React.FC<EnhancedAttendanceTableProps> = ({
               <TableHead>Name</TableHead>
               <TableHead>Department</TableHead>
               <TableHead>Position</TableHead>
-              <TableHead>Date & Time</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Schedule</TableHead>
               <TableHead>C IN (Schedule)</TableHead>
               <TableHead>C Out (Schedule)</TableHead>
               <TableHead>Actual C In</TableHead>
@@ -59,9 +60,9 @@ const EnhancedAttendanceTable: React.FC<EnhancedAttendanceTableProps> = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {Array.from({ length: 10 }).map((_, i) => (
+            {Array.from({ length: 11 }).map((_, i) => (
               <TableRow key={i}>
-                {Array.from({ length: 10 }).map((_, j) => (
+                {Array.from({ length: 11 }).map((_, j) => (
                   <TableCell key={j}>
                     <div className="h-4 w-full animate-pulse bg-gray-200 rounded"></div>
                   </TableCell>
