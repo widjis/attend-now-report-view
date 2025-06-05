@@ -86,9 +86,9 @@ const buildBaseCTEQueries = (toleranceMinutes = 15) => {
           WHEN s.TimeIn = '19:00:00' AND s.TimeOut = '07:00:00' THEN 'TwoShift_Night'
           
           -- Three-Shift Schedule
-          WHEN s.TimeIn = '06:00:00' AND s.TimeOut = '14:00:00' THEN 'ThreeShift_Morning'
-          WHEN s.TimeIn = '14:00:00' AND s.TimeOut = '22:00:00' THEN 'ThreeShift_Afternoon'
-          WHEN s.TimeIn = '22:00:00' AND s.TimeOut = '06:00:00' THEN 'ThreeShift_Night'
+          WHEN s.TimeIn = '07:00:00' AND s.TimeOut = '15:00:00' THEN 'ThreeShift_Morning'
+          WHEN s.TimeIn = '15:00:00' AND s.TimeOut = '23:00:00' THEN 'ThreeShift_Afternoon'
+          WHEN s.TimeIn = '23:00:00' AND s.TimeOut = '07:00:00' THEN 'ThreeShift_Night'
           
           ELSE 'Unknown'
         END AS ScheduleType
