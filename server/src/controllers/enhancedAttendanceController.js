@@ -36,7 +36,10 @@ exports.getEnhancedAttendanceData = async (req, res, next) => {
       pageSize
     };
 
+    console.log('Frontend request filters:', filters);
     const result = await getEnhancedAttendanceData(filters);
+    console.log('Frontend response data sample:', JSON.stringify(result.data.slice(0, 2), null, 2));
+    
     res.json(result);
   } catch (err) {
     console.error('Error fetching enhanced attendance data:', err);
@@ -50,6 +53,8 @@ exports.getEnhancedAttendanceData = async (req, res, next) => {
 // Export enhanced attendance data to CSV
 exports.exportEnhancedAttendanceToCsv = async (req, res, next) => {
   try {
+    console.log('CSV Export called - using enhanced attendance controller');
+    
     const {
       startDate,
       endDate,
@@ -74,7 +79,10 @@ exports.exportEnhancedAttendanceToCsv = async (req, res, next) => {
       clockOutStatus
     };
 
+    console.log('CSV Export filters:', filters);
     const data = await getEnhancedAttendanceForExport(filters);
+    console.log('CSV Export raw data sample:', JSON.stringify(data.slice(0, 2), null, 2));
+    
     await exportToCsv(data, res, startDate, endDate);
   } catch (err) {
     console.error('Error exporting enhanced attendance to CSV:', err);
@@ -85,6 +93,8 @@ exports.exportEnhancedAttendanceToCsv = async (req, res, next) => {
 // Export enhanced attendance data to PDF
 exports.exportEnhancedAttendanceToPdf = async (req, res, next) => {
   try {
+    console.log('PDF Export called - using enhanced attendance controller');
+    
     const {
       startDate,
       endDate,
@@ -109,6 +119,7 @@ exports.exportEnhancedAttendanceToPdf = async (req, res, next) => {
       clockOutStatus
     };
 
+    console.log('PDF Export filters:', filters);
     const data = await getEnhancedAttendanceForExport(filters);
     await exportToPdf(data, res, startDate, endDate);
   } catch (err) {

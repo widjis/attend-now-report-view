@@ -97,6 +97,8 @@ const getEnhancedAttendanceData = async (filters) => {
   // Execute the data query
   const dataResult = await request.query(dataQuery);
   
+  console.log('Service returned data sample:', JSON.stringify(dataResult.recordset.slice(0, 2), null, 2));
+  
   return {
     data: dataResult.recordset,
     total,
@@ -108,6 +110,8 @@ const getEnhancedAttendanceData = async (filters) => {
 
 // Get enhanced attendance data for export (no pagination)
 const getEnhancedAttendanceForExport = async (filters) => {
+  console.log('Export service called with filters:', filters);
+  
   const toleranceMinutes = 15;
   const { whereClause, queryParams } = buildFilterConditions(filters, toleranceMinutes);
   const baseCTE = buildBaseCTEQueries(toleranceMinutes);
@@ -159,7 +163,10 @@ const getEnhancedAttendanceForExport = async (filters) => {
     request = request.input(param.name, param.value);
   });
   
+  console.log('Executing export query...');
   const dataResult = await request.query(dataQuery);
+  console.log('Export service raw result sample:', JSON.stringify(dataResult.recordset.slice(0, 2), null, 2));
+  
   return dataResult.recordset;
 };
 

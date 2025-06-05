@@ -31,7 +31,9 @@ const formatTime = (timeValue) => {
 
 // Helper function to format data for export to match frontend display
 const formatDataForExport = (data) => {
-  return data.map(row => ({
+  console.log('Raw data before formatting:', JSON.stringify(data.slice(0, 2), null, 2));
+  
+  const formattedData = data.map(row => ({
     ...row,
     Date: row.Date ? new Date(row.Date).toISOString().split('T')[0] : '',
     // Format scheduled times to HH:MM to match table display
@@ -41,6 +43,9 @@ const formatDataForExport = (data) => {
     ActualClockIn: row.ActualClockIn ? formatTime(new Date(row.ActualClockIn)) : '',
     ActualClockOut: row.ActualClockOut ? formatTime(new Date(row.ActualClockOut)) : ''
   }));
+  
+  console.log('Formatted data after processing:', JSON.stringify(formattedData.slice(0, 2), null, 2));
+  return formattedData;
 };
 
 module.exports = {

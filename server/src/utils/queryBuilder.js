@@ -64,6 +64,9 @@ const buildFilterConditions = (filters, toleranceMinutes = 15) => {
     whereClause = `WHERE ${filterConditions.join(' AND ')}`;
   }
   
+  console.log('Query builder - whereClause:', whereClause);
+  console.log('Query builder - queryParams:', queryParams);
+  
   return { whereClause, queryParams };
 };
 
