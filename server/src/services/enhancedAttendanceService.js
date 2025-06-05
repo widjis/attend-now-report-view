@@ -114,39 +114,44 @@ const getEnhancedAttendanceForExport = async (filters) => {
   
   const pool = await poolPromise;
   
+  // Use the same query structure as getEnhancedAttendanceData but without pagination
   const dataQuery = `
     ${baseCTE}
-    SELECT 
-      s.StaffNo,
-      s.Name,
-      s.Department,
-      a.Position,
-      a.TrDate AS Date,
-      s.ScheduledClockIn,
-      s.ScheduledClockOut,
-      s.ScheduleType,
-      a.ActualClockIn,
-      a.ActualClockOut,
-      a.ClockInController,
-      a.ClockOutController,
-      CASE
-        WHEN a.ActualClockIn IS NULL THEN 'Missing'
-        WHEN DATEPART(HOUR, a.ActualClockIn) < DATEPART(HOUR, s.ScheduledClockIn) THEN 'Early'
-        WHEN DATEPART(HOUR, a.ActualClockIn) = DATEPART(HOUR, s.ScheduledClockIn) 
-          AND DATEPART(MINUTE, a.ActualClockIn) <= DATEPART(MINUTE, s.ScheduledClockIn) + ${toleranceMinutes} THEN 'OnTime'
-        ELSE 'Late'
-      END AS ClockInStatus,
-      CASE
-        WHEN a.ActualClockOut IS NULL THEN 'Missing'
-        WHEN DATEPART(HOUR, a.ActualClockOut) > DATEPART(HOUR, s.ScheduledClockOut) THEN 'Late'
-        WHEN DATEPART(HOUR, a.ActualClockOut) = DATEPART(HOUR, s.ScheduledClockOut) 
-          AND DATEPART(MINUTE, a.ActualClockOut) >= DATEPART(MINUTE, s.ScheduledClockOut) - ${toleranceMinutes} THEN 'OnTime'
-        ELSE 'Early'
-      END AS ClockOutStatus
-    FROM ScheduleData s
-    JOIN AttendanceData a ON s.StaffNo = a.StaffNo
-    ${whereClause}
-    ORDER BY a.TrDate DESC, s.Name
+    ,
+    FilteredData AS (
+      SELECT 
+        s.StaffNo,
+        s.Name,
+        s.Department,
+        a.Position,
+        a.TrDate AS Date,
+        s.ScheduledClockIn,
+        s.ScheduledClockOut,
+        s.ScheduleType,
+        a.ActualClockIn,
+        a.ActualClockOut,
+        a.ClockInController,
+        a.ClockOutController,
+        CASE
+          WHEN a.ActualClockIn IS NULL THEN 'Missing'
+          WHEN DATEPART(HOUR, a.ActualClockIn) < DATEPART(HOUR, s.ScheduledClockIn) THEN 'Early'
+          WHEN DATEPART(HOUR, a.ActualClockIn) = DATEPART(HOUR, s.ScheduledClockIn) 
+            AND DATEPART(MINUTE, a.ActualClockIn) <= DATEPART(MINUTE, s.ScheduledClockIn) + ${toleranceMinutes} THEN 'OnTime'
+          ELSE 'Late'
+        END AS ClockInStatus,
+        CASE
+          WHEN a.ActualClockOut IS NULL THEN 'Missing'
+          WHEN DATEPART(HOUR, a.ActualClockOut) > DATEPART(HOUR, s.ScheduledClockOut) THEN 'Late'
+          WHEN DATEPART(HOUR, a.ActualClockOut) = DATEPART(HOUR, s.ScheduledClockOut) 
+            AND DATEPART(MINUTE, a.ActualClockOut) >= DATEPART(MINUTE, s.ScheduledClockOut) - ${toleranceMinutes} THEN 'OnTime'
+          ELSE 'Early'
+        END AS ClockOutStatus
+      FROM ScheduleData s
+      JOIN AttendanceData a ON s.StaffNo = a.StaffNo
+      ${whereClause}
+    )
+    SELECT * FROM FilteredData
+    ORDER BY Date DESC, Name
   `;
   
   let request = pool.request();
