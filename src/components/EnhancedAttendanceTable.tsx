@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Table,
@@ -126,19 +125,23 @@ const EnhancedAttendanceTable: React.FC<EnhancedAttendanceTableProps> = ({
     }
   };
 
-  // Get schedule type badge color
+  // Updated schedule type badge color and display
   const getScheduleTypeBadge = (type: string | null | undefined) => {
     if (!type) return <Badge variant="outline">Unknown</Badge>;
     
     switch (type) {
       case "Fixed":
         return <Badge className="bg-purple-100 text-purple-800 border-purple-200">Fixed 7-17</Badge>;
-      case "Shift1":
-        return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Shift 1</Badge>;
-      case "Shift2":
-        return <Badge className="bg-green-100 text-green-800 border-green-200">Shift 2</Badge>;
-      case "Shift3":
-        return <Badge className="bg-orange-100 text-orange-800 border-orange-200">Shift 3</Badge>;
+      case "TwoShift_Day":
+        return <Badge className="bg-blue-100 text-blue-800 border-blue-200">2-Shift Day</Badge>;
+      case "TwoShift_Night":
+        return <Badge className="bg-indigo-100 text-indigo-800 border-indigo-200">2-Shift Night</Badge>;
+      case "ThreeShift_Morning":
+        return <Badge className="bg-green-100 text-green-800 border-green-200">3-Shift Morning</Badge>;
+      case "ThreeShift_Afternoon":
+        return <Badge className="bg-orange-100 text-orange-800 border-orange-200">3-Shift Afternoon</Badge>;
+      case "ThreeShift_Night":
+        return <Badge className="bg-red-100 text-red-800 border-red-200">3-Shift Night</Badge>;
       default:
         return <Badge variant="outline">{type}</Badge>;
     }

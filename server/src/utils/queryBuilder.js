@@ -67,7 +67,7 @@ const buildFilterConditions = (filters, toleranceMinutes = 15) => {
   return { whereClause, queryParams };
 };
 
-// Build base CTE queries for enhanced attendance
+// Build base CTE queries for enhanced attendance with new schedule detection
 const buildBaseCTEQueries = (toleranceMinutes = 15) => {
   return `
     WITH ScheduleData AS (
@@ -78,10 +78,18 @@ const buildBaseCTEQueries = (toleranceMinutes = 15) => {
         s.TimeIn AS ScheduledClockIn,
         s.TimeOut AS ScheduledClockOut,
         CASE 
+          -- Fixed/Normal Schedule: 07:00-17:00
           WHEN s.TimeIn = '07:00:00' AND s.TimeOut = '17:00:00' THEN 'Fixed'
-          WHEN s.TimeIn = '07:00:00' AND s.TimeOut = '15:00:00' THEN 'Shift1'
-          WHEN s.TimeIn = '15:00:00' AND s.TimeOut = '23:00:00' THEN 'Shift2'
-          WHEN s.TimeIn = '23:00:00' AND s.TimeOut = '07:00:00' THEN 'Shift3'
+          
+          -- Two-Shift Schedule
+          WHEN s.TimeIn = '07:00:00' AND s.TimeOut = '19:00:00' THEN 'TwoShift_Day'
+          WHEN s.TimeIn = '19:00:00' AND s.TimeOut = '07:00:00' THEN 'TwoShift_Night'
+          
+          -- Three-Shift Schedule
+          WHEN s.TimeIn = '06:00:00' AND s.TimeOut = '14:00:00' THEN 'ThreeShift_Morning'
+          WHEN s.TimeIn = '14:00:00' AND s.TimeOut = '22:00:00' THEN 'ThreeShift_Afternoon'
+          WHEN s.TimeIn = '22:00:00' AND s.TimeOut = '06:00:00' THEN 'ThreeShift_Night'
+          
           ELSE 'Unknown'
         END AS ScheduleType
       FROM CardDBTimeSchedule s

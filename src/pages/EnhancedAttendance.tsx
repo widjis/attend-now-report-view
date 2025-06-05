@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Toaster, toast } from "sonner";
@@ -35,7 +36,7 @@ const EnhancedAttendance = () => {
   const [endDate, setEndDate] = useState<Date>(today);
   const [searchTerm, setSearchTerm] = useState("");
   const [department, setDepartment] = useState("all");
-  const [scheduleType, setScheduleType] = useState<"Fixed" | "Shift1" | "Shift2" | "Shift3" | "All">("All");
+  const [scheduleType, setScheduleType] = useState<"Fixed" | "TwoShift_Day" | "TwoShift_Night" | "ThreeShift_Morning" | "ThreeShift_Afternoon" | "ThreeShift_Night" | "All">("All");
   const [clockInStatus, setClockInStatus] = useState<"Early" | "OnTime" | "Late" | "Missing" | "All">("All");
   const [clockOutStatus, setClockOutStatus] = useState<"Early" | "OnTime" | "Late" | "Missing" | "All">("All");
   const [page, setPage] = useState(1);
@@ -139,13 +140,15 @@ const EnhancedAttendance = () => {
     { value: "Missing", label: "Missing" },
   ];
 
-  // Schedule type options
+  // Updated schedule type options
   const scheduleTypeOptions = [
     { value: "All", label: "All Schedules" },
     { value: "Fixed", label: "Fixed (7-17)" },
-    { value: "Shift1", label: "Shift 1" },
-    { value: "Shift2", label: "Shift 2" },
-    { value: "Shift3", label: "Shift 3" },
+    { value: "TwoShift_Day", label: "Two Shift - Day (7-19)" },
+    { value: "TwoShift_Night", label: "Two Shift - Night (19-7)" },
+    { value: "ThreeShift_Morning", label: "Three Shift - Morning (6-14)" },
+    { value: "ThreeShift_Afternoon", label: "Three Shift - Afternoon (14-22)" },
+    { value: "ThreeShift_Night", label: "Three Shift - Night (22-6)" },
   ];
 
   return (
@@ -222,7 +225,7 @@ const EnhancedAttendance = () => {
                 </label>
                 <Select 
                   value={scheduleType} 
-                  onValueChange={(value: "Fixed" | "Shift1" | "Shift2" | "Shift3" | "All") => setScheduleType(value)}
+                  onValueChange={(value: "Fixed" | "TwoShift_Day" | "TwoShift_Night" | "ThreeShift_Morning" | "ThreeShift_Afternoon" | "ThreeShift_Night" | "All") => setScheduleType(value)}
                 >
                   <SelectTrigger id="schedule-type">
                     <SelectValue placeholder="Select schedule type" />

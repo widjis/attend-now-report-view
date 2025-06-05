@@ -13,7 +13,7 @@ export interface EnhancedAttendanceRecord {
   Date: string;
   ScheduledClockIn: string | null;
   ScheduledClockOut: string | null;
-  ScheduleType: 'Fixed' | 'Shift1' | 'Shift2' | 'Shift3' | 'Unknown';
+  ScheduleType: 'Fixed' | 'TwoShift_Day' | 'TwoShift_Night' | 'ThreeShift_Morning' | 'ThreeShift_Afternoon' | 'ThreeShift_Night' | 'Unknown';
   
   // Actual attendance
   ActualClockIn: string | null;
@@ -39,7 +39,7 @@ export interface EnhancedAttendanceFilters {
   endDate: string;
   search?: string;
   department?: string;
-  scheduleType?: 'Fixed' | 'Shift1' | 'Shift2' | 'Shift3' | 'All';
+  scheduleType?: 'Fixed' | 'TwoShift_Day' | 'TwoShift_Night' | 'ThreeShift_Morning' | 'ThreeShift_Afternoon' | 'ThreeShift_Night' | 'All';
   clockInStatus?: 'Early' | 'OnTime' | 'Late' | 'Missing' | 'All';
   clockOutStatus?: 'Early' | 'OnTime' | 'Late' | 'Missing' | 'All';
   page: number;
