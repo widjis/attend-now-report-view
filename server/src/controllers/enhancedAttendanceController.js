@@ -1,7 +1,7 @@
-
 const { getEnhancedAttendanceData, getEnhancedAttendanceForExport } = require('../services/enhancedAttendanceService');
 const { exportToCsv } = require('../services/csvExportService');
 const { exportToPdf } = require('../services/pdfExportService');
+const { exportToXlsx } = require('../services/xlsxExportService');
 
 // Get enhanced attendance data (combining schedule and actual attendance)
 exports.getEnhancedAttendanceData = async (req, res, next) => {
@@ -124,6 +124,44 @@ exports.exportEnhancedAttendanceToPdf = async (req, res, next) => {
     await exportToPdf(data, res, startDate, endDate);
   } catch (err) {
     console.error('Error exporting enhanced attendance to PDF:', err);
+    res.status(500).json({ error: 'Internal Server Error', message: err.message });
+  }
+};
+
+// Export enhanced attendance data to XLSX
+exports.exportEnhancedAttendanceToXlsx = async (req, res, next) => {
+  try {
+    console.log('XLSX Export called - using enhanced attendance controller');
+    
+    const {
+      startDate,
+      endDate,
+      search = '',
+      department,
+      scheduleType,
+      clockInStatus,
+      clockOutStatus
+    } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: 'Start date and end date are required' });
+    }
+
+    const filters = {
+      startDate,
+      endDate,
+      search,
+      department,
+      scheduleType,
+      clockInStatus,
+      clockOutStatus
+    };
+
+    console.log('XLSX Export filters:', filters);
+    const data = await getEnhancedAttendanceForExport(filters);
+    await exportToXlsx(data, res, startDate, endDate);
+  } catch (err) {
+    console.error('Error exporting enhanced attendance to XLSX:', err);
     res.status(500).json({ error: 'Internal Server Error', message: err.message });
   }
 };

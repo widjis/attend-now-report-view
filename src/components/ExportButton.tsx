@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface ExportButtonProps {
-  onExport: (format: "csv" | "pdf") => void;
+  onExport: (format: "csv" | "pdf" | "xlsx") => void;
   isLoading?: boolean;
   disabled?: boolean;
   className?: string;
@@ -45,6 +45,9 @@ const ExportButton: React.FC<ExportButtonProps> = ({
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => onExport("csv")}>
           Export as CSV
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onExport("xlsx")}>
+          Export as Excel
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onExport("pdf")}>
           Export as PDF

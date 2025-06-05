@@ -120,3 +120,19 @@ export async function exportEnhancedAttendancePdf(params: Record<string, string 
   const blob = await response.blob();
   return blob;
 }
+
+export async function exportEnhancedAttendanceXlsx(params: Record<string, string | number | undefined>) {
+  const query = new URLSearchParams(params as Record<string, string>).toString();
+  const url = `${API_BASE_URL}/enhanced-attendance/export/xlsx?${query}`;
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    },
+  });
+  if (!response.ok) {
+    throw new Error('Failed to export XLSX');
+  }
+  const blob = await response.blob();
+  return blob;
+}

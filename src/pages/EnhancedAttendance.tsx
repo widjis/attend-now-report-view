@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Toaster, toast } from "sonner";
@@ -16,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import DateRangePicker from "@/components/DateRangePicker";
 
 // API and Types
-import { fetchEnhancedAttendanceData, exportEnhancedAttendanceCsv, exportEnhancedAttendancePdf } from "@/api/enhancedAttendanceApi";
+import { fetchEnhancedAttendanceData, exportEnhancedAttendanceCsv, exportEnhancedAttendancePdf, exportEnhancedAttendanceXlsx } from "@/api/enhancedAttendanceApi";
 import { getFilterOptions } from "@/api/attendanceApi";
 import { EnhancedAttendanceFilters } from "@/types/enhancedAttendance";
 
@@ -81,7 +80,7 @@ const EnhancedAttendance = () => {
   };
 
   // Handle export
-  const handleExport = async (format: "csv" | "pdf") => {
+  const handleExport = async (format: "csv" | "pdf" | "xlsx") => {
     try {
       setIsExporting(true);
       
@@ -107,6 +106,9 @@ const EnhancedAttendance = () => {
       if (format === "csv") {
         blob = await exportEnhancedAttendanceCsv(cleanParams);
         filename = `enhanced-attendance-${formatDateForApi(startDate)}-to-${formatDateForApi(endDate)}.csv`;
+      } else if (format === "xlsx") {
+        blob = await exportEnhancedAttendanceXlsx(cleanParams);
+        filename = `enhanced-attendance-${formatDateForApi(startDate)}-to-${formatDateForApi(endDate)}.xlsx`;
       } else {
         blob = await exportEnhancedAttendancePdf(cleanParams);
         filename = `enhanced-attendance-${formatDateForApi(startDate)}-to-${formatDateForApi(endDate)}.pdf`;
