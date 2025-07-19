@@ -1,12 +1,12 @@
 
 import React from "react";
 import {
+  FormControl,
+  InputLabel,
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  MenuItem,
+  SelectChangeEvent,
+} from "@mui/material";
 
 interface FilterOption {
   value: string;
@@ -30,24 +30,33 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
   placeholder = "Select...",
   className,
 }) => {
+  const handleChange = (event: SelectChangeEvent) => {
+    onChange(event.target.value);
+  };
+
   return (
-    <div className={className}>
-      <label htmlFor={`filter-${label}`} className="text-sm font-medium mb-1 block">
-        {label}
-      </label>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger id={`filter-${label}`}>
-          <SelectValue placeholder={placeholder} />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={`${label}-${option.value}`} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
+    <FormControl fullWidth size="small" className={className}>
+      <InputLabel id={`filter-${label}-label`}>{label}</InputLabel>
+      <Select
+        labelId={`filter-${label}-label`}
+        id={`filter-${label}`}
+        value={value}
+        label={label}
+        onChange={handleChange}
+        displayEmpty={!!placeholder}
+      >
+        {placeholder && (
+          <MenuItem value="">
+            <em>{placeholder}</em>
+          </MenuItem>
+        )}
+        {options.map((option) => (
+          <MenuItem key={`${label}-${option.value}`} value={option.value}>
+            {option.label}
+          </MenuItem>
+        ))}
       </Select>
-    </div>
+    </FormControl>
   );
 };
 

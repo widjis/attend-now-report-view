@@ -1,9 +1,20 @@
 
 import React, { useState, useEffect } from "react";
-import { format, subDays } from "date-fns";
+import dayjs from "dayjs";
 import { useQuery } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { Link } from "react-router-dom";
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  Container,
+  Grid,
+  Paper
+} from "@mui/material";
+import { BarChart, Schedule } from "@mui/icons-material";
 
 // Components
 import DateRangePicker from "@/components/DateRangePicker";
@@ -12,9 +23,6 @@ import FilterDropdown from "@/components/FilterDropdown";
 import ExportButton from "@/components/ExportButton";
 import AttendanceTable from "@/components/AttendanceTable";
 import { DateRange } from "react-day-picker";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ChartBarIcon, Clock } from "lucide-react";
 
 // API and Types
 import { 
@@ -26,9 +34,9 @@ import { AttendanceFilters } from "@/types/attendance";
 
 const Index = () => {
   // Default to last 7 days
-  const today = new Date();
+  const today = dayjs().toDate();
   const defaultDateRange: DateRange = {
-    from: subDays(today, 7),
+    from: dayjs().subtract(7, 'day').toDate(),
     to: today
   };
 
@@ -51,8 +59,8 @@ const Index = () => {
   // Build filters object for API call
   const buildFilters = (): AttendanceFilters => {
     return {
-      startDate: dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : format(subDays(today, 7), "yyyy-MM-dd"),
-      endDate: dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : format(today, "yyyy-MM-dd"),
+      startDate: dateRange?.from ? dayjs(dateRange.from).format("YYYY-MM-DD") : dayjs().subtract(7, 'day').format("YYYY-MM-DD"),
+      endDate: dateRange?.to ? dayjs(dateRange.to).format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD"),
       search: searchTerm,
       department: department === "all" ? undefined : department,
       company: company === "all" ? undefined : company,
@@ -87,97 +95,111 @@ const Index = () => {
   const totalPages = data ? Math.ceil(data.total / pageSize) : 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <Container maxWidth="xl" sx={{ minHeight: '100vh', bgcolor: 'grey.50', py: { xs: 2, md: 4 } }}>
       <Toaster position="top-right" />
 
-      <div className="max-w-7xl mx-auto">
-        <header className="mb-8 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Attendance Report</h1>
-            <p className="text-gray-500 mt-1">
+      <Box sx={{ maxWidth: '1200px', mx: 'auto' }}>
+        <Box component="header" sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+          <Box>
+            <Typography variant="h3" component="h1" sx={{ fontWeight: 'bold', color: 'grey.900' }}>
+              Attendance Report
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
               View and export attendance records from the database
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Link to="/schedule">
-              <Button variant="outline" className="flex items-center gap-2">
-                <Clock size={16} />
-                <span>Time Scheduling</span>
-              </Button>
-            </Link>
-            <Link to="/dashboard">
-              <Button variant="outline" className="flex items-center gap-2">
-                <ChartBarIcon size={16} />
-                <span>View Dashboard</span>
-              </Button>
-            </Link>
-          </div>
-        </header>
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              component={Link}
+              to="/schedule"
+              variant="outlined"
+              startIcon={<Schedule />}
+            >
+              Time Scheduling
+            </Button>
+            <Button
+              component={Link}
+              to="/dashboard"
+              variant="outlined"
+              startIcon={<BarChart />}
+            >
+              View Dashboard
+            </Button>
+          </Box>
+        </Box>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg">Filters</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-              <DateRangePicker 
-                startDate={dateRange?.from || subDays(today, 7)}
-                endDate={dateRange?.to || today}
-                onStartDateChange={(date) => setDateRange(range => ({ ...range, from: date }))}
-                onEndDateChange={(date) => setDateRange(range => ({ ...range, to: date }))}
-              />
+        <Card sx={{ mb: 3 }}>
+          <CardContent sx={{ p: 3 }}>
+            <Typography variant="h6" component="h2" sx={{ mb: 2 }}>
+              Filters
+            </Typography>
+            <Grid container spacing={2} sx={{ mb: 2 }}>
+              <Grid item xs={12} md={6} lg={3}>
+                <DateRangePicker 
+                  startDate={dateRange?.from || dayjs().subtract(7, 'day').toDate()}
+                  endDate={dateRange?.to || dayjs().toDate()}
+                  onStartDateChange={(date) => setDateRange(range => ({ ...range, from: date }))}
+                  onEndDateChange={(date) => setDateRange(range => ({ ...range, to: date }))}
+                />
+              </Grid>
 
-              <div className="lg:col-span-2">
+              <Grid item xs={12} md={6} lg={6}>
                 <SearchBar 
                   initialValue={searchTerm} 
                   onSearch={setSearchTerm} 
                 />
-              </div>
+              </Grid>
 
-              <div className="flex justify-end">
+              <Grid item xs={12} md={6} lg={3} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <ExportButton 
                   onExport={handleExport} 
                   isLoading={isExporting}
                   disabled={isLoading || !data || data.data.length === 0}
                 />
-              </div>
-            </div>
+              </Grid>
+            </Grid>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FilterDropdown 
-                label="Department"
-                value={department}
-                onChange={setDepartment}
-                options={filterOptions?.departments || []}
-              />
-              <FilterDropdown 
-                label="Company"
-                value={company}
-                onChange={setCompany}
-                options={filterOptions?.companies || []}
-              />
-              <FilterDropdown 
-                label="Card Type"
-                value={cardType}
-                onChange={setCardType}
-                options={filterOptions?.cardTypes || []}
-              />
-            </div>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={4}>
+                <FilterDropdown 
+                  label="Department"
+                  value={department}
+                  onChange={setDepartment}
+                  options={filterOptions?.departments || []}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <FilterDropdown 
+                  label="Company"
+                  value={company}
+                  onChange={setCompany}
+                  options={filterOptions?.companies || []}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <FilterDropdown 
+                  label="Card Type"
+                  value={cardType}
+                  onChange={setCardType}
+                  options={filterOptions?.cardTypes || []}
+                />
+              </Grid>
+            </Grid>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-lg">Attendance Records</CardTitle>
-              <div className="text-sm text-gray-500">
+          <CardContent sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6" component="h2">
+                Attendance Records
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
                 {data && !isLoading ? 
                   `Showing ${(page - 1) * pageSize + 1}-${Math.min(page * pageSize, data.total)} of ${data.total} records` : 
                   'Loading records...'}
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
+              </Typography>
+            </Box>
             <AttendanceTable 
               data={data?.data || []}
               isLoading={isLoading}
@@ -187,8 +209,8 @@ const Index = () => {
             />
           </CardContent>
         </Card>
-      </div>
-    </div>
+      </Box>
+    </Container>
   );
 };
 

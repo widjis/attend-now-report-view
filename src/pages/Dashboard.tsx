@@ -3,7 +3,6 @@ import { subDays, subMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth } 
 import { useQuery } from "@tanstack/react-query";
 import {
   Box,
-  Container,
   Typography,
   Tabs,
   Tab,
@@ -120,108 +119,106 @@ const Dashboard = () => {
   };
   
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50', py: 3 }}>
-      <Container maxWidth="xl">
-        <PageHeader
-          title="Attendance Dashboard"
-          subtitle="Summary of attendance records and analytics"
-          currentPage="dashboard"
-        />
-        
-        {/* Timeframe Tabs */}
+    <>
+      <PageHeader
+        title="Attendance Dashboard"
+        subtitle="Summary of attendance records and analytics"
+        currentPage="dashboard"
+      />
+      
+      {/* Timeframe Tabs */}
+      <Box sx={{ mb: 3 }}>
+        <Paper sx={{ borderRadius: 2 }}>
+          <Tabs
+            value={tabValue}
+            onChange={handleTabChange}
+            variant={isMobile ? "scrollable" : "fullWidth"}
+            scrollButtons="auto"
+            sx={{
+              '& .MuiTab-root': {
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '1rem',
+              },
+            }}
+          >
+            <Tab label="Day" />
+            <Tab label="Week" />
+            <Tab label="Month" />
+            <Tab label="Quarter" />
+          </Tabs>
+        </Paper>
+      </Box>
+      
+      <TabPanel value={tabValue} index={tabValue}>
+        {/* Summary Stats */}
         <Box sx={{ mb: 3 }}>
-          <Paper sx={{ borderRadius: 2 }}>
-            <Tabs
-              value={tabValue}
-              onChange={handleTabChange}
-              variant={isMobile ? "scrollable" : "fullWidth"}
-              scrollButtons="auto"
-              sx={{
-                '& .MuiTab-root': {
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  fontSize: '1rem',
-                },
-              }}
-            >
-              <Tab label="Day" />
-              <Tab label="Week" />
-              <Tab label="Month" />
-              <Tab label="Quarter" />
-            </Tabs>
-          </Paper>
-        </Box>
-        
-        <TabPanel value={tabValue} index={tabValue}>
-          {/* Summary Stats */}
-          <Box sx={{ mb: 3 }}>
-            <StyledCard>
-              <StyledCardHeader
-                title={
-                  <>
-                    <ClockIcon />
-                    Summary Stats
-                  </>
-                }
-              />
-              <CardContent>
-                <AttendanceSummaryStats data={summaryData} isLoading={isLoading} />
-              </CardContent>
-            </StyledCard>
-          </Box>
-          
-          {/* Charts Grid */}
-          <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid item xs={12} lg={6}>
-              <StyledCard>
-                <StyledCardHeader
-                  title={
-                    <>
-                      <ChartBarIcon />
-                      Attendance by Date
-                    </>
-                  }
-                />
-                <CardContent>
-                  <AttendanceByDateChart data={summaryData?.byDate} isLoading={isLoading} />
-                </CardContent>
-              </StyledCard>
-            </Grid>
-            
-            <Grid item xs={12} lg={6}>
-              <StyledCard>
-                <StyledCardHeader
-                  title={
-                    <>
-                      <ChartBarIcon />
-                      Status Distribution
-                    </>
-                  }
-                />
-                <CardContent>
-                  <AttendanceStatusChart data={summaryData?.byStatus} isLoading={isLoading} />
-                </CardContent>
-              </StyledCard>
-            </Grid>
-          </Grid>
-          
-          {/* Controller Chart */}
           <StyledCard>
             <StyledCardHeader
               title={
                 <>
-                  <ChartBarIcon />
-                  Attendance by Controller
+                  <ClockIcon />
+                  Summary Stats
                 </>
               }
             />
             <CardContent>
-              <AttendanceByControllerChart data={summaryData?.byController} isLoading={isLoading} />
+              <AttendanceSummaryStats data={summaryData} isLoading={isLoading} />
             </CardContent>
           </StyledCard>
-        </TabPanel>
-      </Container>
-    </Box>
+        </Box>
+        
+        {/* Charts Grid */}
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12} lg={6}>
+            <StyledCard>
+              <StyledCardHeader
+                title={
+                  <>
+                    <ChartBarIcon />
+                    Attendance by Date
+                  </>
+                }
+              />
+              <CardContent>
+                <AttendanceByDateChart data={summaryData?.byDate} isLoading={isLoading} />
+              </CardContent>
+            </StyledCard>
+          </Grid>
+          
+          <Grid item xs={12} lg={6}>
+            <StyledCard>
+              <StyledCardHeader
+                title={
+                  <>
+                    <ChartBarIcon />
+                    Status Distribution
+                  </>
+                }
+              />
+              <CardContent>
+                <AttendanceStatusChart data={summaryData?.byStatus} isLoading={isLoading} />
+              </CardContent>
+            </StyledCard>
+          </Grid>
+        </Grid>
+        
+        {/* Controller Chart */}
+        <StyledCard>
+          <StyledCardHeader
+            title={
+              <>
+                <ChartBarIcon />
+                Attendance by Controller
+              </>
+            }
+          />
+          <CardContent>
+            <AttendanceByControllerChart data={summaryData?.byController} isLoading={isLoading} />
+          </CardContent>
+        </StyledCard>
+      </TabPanel>
+    </>
   );
 };
 

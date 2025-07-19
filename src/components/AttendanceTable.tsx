@@ -1,34 +1,34 @@
 
 
-import { formatInTimeZone } from "date-fns-tz";
-
-
 import React, { useState } from "react";
 import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
-  TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import {
+  Paper,
   Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import { format, parseISO } from "date-fns";
+  Box,
+  Typography,
+  Chip,
+  Skeleton,
+  TableSortLabel
+} from "@mui/material";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
 import { AttendanceRecord } from "../types/attendance";
-import { cn } from "@/lib/utils";
+
+// Extend dayjs with timezone support
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 
 // Define timezone constant
 const TIMEZONE = "UTC"; // Equivalent to GMT+0
-const TIMEZONE_DISPLAY = "GMT+8";
+const TIMEZONE_DISPLAY = "UTC+7";
 
 interface AttendanceTableProps {
   data: AttendanceRecord[];
@@ -64,12 +64,10 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
   const formatDateTime = (dateTime: string | null) => {
     if (!dateTime) return "N/A";
     try {
-      // Use formatInTimeZone to explicitly format the date in Asia/Singapore timezone (GMT+8)
-      return formatInTimeZone(
-        parseISO(dateTime),  // Parse the ISO string
-        TIMEZONE,           // Explicitly use Asia/Singapore timezone
-        "MMM dd, yyyy HH:mm" // Format pattern
-      );
+      // Use dayjs to format the date in the specified timezone
+      return dayjs(dateTime)
+        .tz(TIMEZONE)
+        .format("MMM DD, YYYY HH:mm");
     } catch (error) {
       console.error("Error formatting date:", error);
       return dateTime;
@@ -79,44 +77,58 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
   // Display skeleton loader while loading
   if (isLoading) {
     return (
-      <div className={cn("rounded-md border", className)}>
+      <TableContainer component={Paper} className={className}>
         <Table>
-          <TableHeader>
+          <TableHead>
             <TableRow>
-              <TableHead>Card No</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Department</TableHead>
-              <TableHead>Position</TableHead>
-              <TableHead>Date & Time</TableHead>
-              <TableHead>Clock Event</TableHead>
-              <TableHead>Controller</TableHead>
+              <TableCell>Card No</TableCell>
+              <TableCell>Name</TableCell>
+              <TableCell>Department</TableCell>
+              <TableCell>Position</TableCell>
+              <TableCell>Date & Time</TableCell>
+              <TableCell>Clock Event</TableCell>
+              <TableCell>Controller</TableCell>
             </TableRow>
-          </TableHeader>
+          </TableHead>
           <TableBody>
             {Array.from({ length: 10 }).map((_, i) => (
               <TableRow key={i}>
                 {Array.from({ length: 7 }).map((_, j) => (
                   <TableCell key={j}>
-                    <div className="h-4 w-full animate-pulse bg-gray-200 rounded"></div>
+                    <Skeleton variant="text" width="100%" height={20} />
                   </TableCell>
                 ))}
               </TableRow>
             ))}
           </TableBody>
         </Table>
-      </div>
+      </TableContainer>
     );
   }
 
   // Display empty state
   if (data.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 border rounded-md text-center">
-        <h3 className="text-lg font-medium">No attendance records found</h3>
-        <p className="text-sm text-gray-500 mt-2">
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          p: 4, 
+          border: 1, 
+          borderColor: 'divider', 
+          borderRadius: 1, 
+          textAlign: 'center' 
+        }}
+      >
+        <Typography variant="h6" component="h3">
+          No attendance records found
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
           Try adjusting your filters or search criteria
-        </p>
-      </div>
+        </Typography>
+      </Box>
     );
   }
 
@@ -148,144 +160,117 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
     });
   }
 
-  const getSortIndicator = (column: keyof AttendanceRecord) => {
-    if (sortColumn !== column) return null;
-    return sortDirection === "asc" ? " ▲" : " ▼";
-  };
 
   return (
-    <div className={className}>
-      <div className="rounded-md border overflow-x-auto">
-        <div className="bg-gray-50 px-4 py-2 text-right text-sm text-gray-500">
-          Times are displayed in {TIMEZONE_DISPLAY} (database native timezone)
-        </div>
-        <Table className="w-full">
-          <TableHeader>
+    <Box className={className}>
+      <TableContainer component={Paper}>
+        <Box sx={{ bgcolor: 'grey.50', px: 2, py: 1, textAlign: 'right' }}>
+          <Typography variant="caption" color="text.secondary">
+            Times are displayed in {TIMEZONE_DISPLAY} (database native timezone)
+          </Typography>
+        </Box>
+        <Table>
+          <TableHead>
             <TableRow>
-              <TableHead 
-                className="cursor-pointer" 
-                onClick={() => handleSort("CardNo")}
-              >
-                Card No{getSortIndicator("CardNo")}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer" 
-                onClick={() => handleSort("Name")}
-              >
-                Name{getSortIndicator("Name")}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer" 
-                onClick={() => handleSort("Department")}
-              >
-                Department{getSortIndicator("Department")}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer" 
-                onClick={() => handleSort("Position")}
-              >
-                Position{getSortIndicator("Position")}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer" 
-                onClick={() => handleSort("TrDateTime")}
-              >
-                Date & Time ({TIMEZONE_DISPLAY}){getSortIndicator("TrDateTime")}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer" 
-                onClick={() => handleSort("ClockEvent")}
-              >
-                Clock Event{getSortIndicator("ClockEvent")}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer" 
-                onClick={() => handleSort("TrController")}
-              >
-                Controller{getSortIndicator("TrController")}
-              </TableHead>
+              <TableCell>
+                <TableSortLabel
+                  active={sortColumn === "CardNo"}
+                  direction={sortColumn === "CardNo" ? sortDirection : "asc"}
+                  onClick={() => handleSort("CardNo")}
+                >
+                  Card No
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortColumn === "Name"}
+                  direction={sortColumn === "Name" ? sortDirection : "asc"}
+                  onClick={() => handleSort("Name")}
+                >
+                  Name
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortColumn === "Department"}
+                  direction={sortColumn === "Department" ? sortDirection : "asc"}
+                  onClick={() => handleSort("Department")}
+                >
+                  Department
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortColumn === "Position"}
+                  direction={sortColumn === "Position" ? sortDirection : "asc"}
+                  onClick={() => handleSort("Position")}
+                >
+                  Position
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortColumn === "TrDateTime"}
+                  direction={sortColumn === "TrDateTime" ? sortDirection : "asc"}
+                  onClick={() => handleSort("TrDateTime")}
+                >
+                  Date & Time ({TIMEZONE_DISPLAY})
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortColumn === "ClockEvent"}
+                  direction={sortColumn === "ClockEvent" ? sortDirection : "asc"}
+                  onClick={() => handleSort("ClockEvent")}
+                >
+                  Clock Event
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortColumn === "TrController"}
+                  direction={sortColumn === "TrController" ? sortDirection : "asc"}
+                  onClick={() => handleSort("TrController")}
+                >
+                  Controller
+                </TableSortLabel>
+              </TableCell>
             </TableRow>
-          </TableHeader>
+          </TableHead>
           <TableBody>
             {sortedData.map((record, index) => (
-              <TableRow key={index} className="hover:bg-gray-50">
-                <TableCell className="font-medium">{record.CardNo || "N/A"}</TableCell>
+              <TableRow key={index} hover>
+                <TableCell sx={{ fontWeight: 'medium' }}>{record.CardNo || "N/A"}</TableCell>
                 <TableCell>{record.Name || "N/A"}</TableCell>
                 <TableCell>{record.Department || "N/A"}</TableCell>
                 <TableCell>{record.Position || "N/A"}</TableCell>
                 <TableCell>{formatDateTime(record.TrDateTime)}</TableCell>
                 <TableCell>
-                  <span
-                    className={cn(
-                      "px-2 py-1 rounded-full text-xs font-medium",
-                      record.ClockEvent === "Clock In"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-orange-100 text-orange-800"
-                    )}
-                  >
-                    {record.ClockEvent || "N/A"}
-                  </span>
+                  <Chip
+                    label={record.ClockEvent || "N/A"}
+                    color={record.ClockEvent === "Clock In" ? "success" : "warning"}
+                    size="small"
+                    variant="outlined"
+                  />
                 </TableCell>
                 <TableCell>{record.TrController || "N/A"}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
-      </div>
+      </TableContainer>
 
-      <Pagination className="mt-4">
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious
-              className={cn(currentPage === 1 && "pointer-events-none opacity-50")}
-              onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
-            />
-          </PaginationItem>
-          
-          {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
-            let pageNumber: number;
-            
-            if (totalPages <= 5) {
-              pageNumber = i + 1;
-            } else if (currentPage <= 3) {
-              pageNumber = i + 1;
-            } else if (currentPage >= totalPages - 2) {
-              pageNumber = totalPages - 4 + i;
-            } else {
-              pageNumber = currentPage - 2 + i;
-            }
-            
-            if (pageNumber === 1 || pageNumber === totalPages || 
-               (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)) {
-              return (
-                <PaginationItem key={pageNumber}>
-                  <PaginationLink
-                    isActive={pageNumber === currentPage}
-                    onClick={() => onPageChange(pageNumber)}
-                  >
-                    {pageNumber}
-                  </PaginationLink>
-                </PaginationItem>
-              );
-            } else if (pageNumber === currentPage - 2 || pageNumber === currentPage + 2) {
-              return (
-                <PaginationItem key={`ellipsis-${pageNumber}`}>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              );
-            }
-            return null;
-          })}
-          
-          <PaginationItem>
-            <PaginationNext
-              className={cn(currentPage === totalPages && "pointer-events-none opacity-50")}
-              onClick={() => currentPage < totalPages && onPageChange(currentPage + 1)}
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
-    </div>
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+        <Pagination
+          count={totalPages}
+          page={currentPage}
+          onChange={(_, page) => onPageChange(page)}
+          color="primary"
+          showFirstButton
+          showLastButton
+        />
+      </Box>
+    </Box>
   );
 };
 

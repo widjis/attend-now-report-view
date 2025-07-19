@@ -1,7 +1,7 @@
 
-# Attendance System Backend
+# MTI Attendance System Backend
 
-This is the Node.js backend for the Attendance System application. It provides API endpoints for fetching attendance data, exporting to CSV/PDF, and retrieving summary statistics.
+This is the Node.js backend for the MTI Attendance System application. It provides API endpoints for fetching attendance data, exporting to CSV/PDF, and retrieving summary statistics.
 
 ## Setup
 

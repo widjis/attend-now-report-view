@@ -1,7 +1,6 @@
 
 import React, { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { TextField, Button, InputAdornment, Box } from "@mui/material";
 import { Search } from "lucide-react";
 
 interface SearchBarProps {
@@ -25,20 +24,28 @@ const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className={`flex w-full items-center space-x-2 ${className}`}>
-      <div className="relative flex-grow">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          id="search-field"
-          type="text"
-          value={searchValue}
-          onChange={(e) => setSearchValue(e.target.value)}
-          placeholder={placeholder}
-          className="w-full pl-10"
-        />
-      </div>
-      <Button type="submit">Search</Button>
-    </form>
+    <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', width: '100%', alignItems: 'center', gap: 2 }}>
+      <TextField
+        id="search-field"
+        type="text"
+        value={searchValue}
+        onChange={(e) => setSearchValue(e.target.value)}
+        placeholder={placeholder}
+        fullWidth
+        variant="outlined"
+        size="small"
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <Search size={20} />
+            </InputAdornment>
+          ),
+        }}
+      />
+      <Button type="submit" variant="contained">
+        Search
+      </Button>
+    </Box>
   );
 };
 

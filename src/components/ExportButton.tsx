@@ -1,13 +1,7 @@
 
-import React from "react";
-import { Button } from "@/components/ui/button";
+import React, { useState } from "react";
+import { Button, Menu, MenuItem, CircularProgress } from "@mui/material";
 import { Download } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface ExportButtonProps {
   onExport: (format: "csv" | "pdf" | "xlsx") => void;
@@ -22,38 +16,57 @@ const ExportButton: React.FC<ExportButtonProps> = ({
   disabled = false,
   className,
 }) => {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleExport = (format: "csv" | "pdf" | "xlsx") => {
+    onExport(format);
+    handleClose();
+  };
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          className={className}
-          disabled={disabled || isLoading}
-        >
-          {isLoading ? (
-            <>
-              <span className="animate-pulse">Exporting...</span>
-            </>
-          ) : (
-            <>
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </>
-          )}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => onExport("csv")}>
+    <>
+      <Button
+        variant="outlined"
+        className={className}
+        disabled={disabled || isLoading}
+        onClick={handleClick}
+        startIcon={isLoading ? <CircularProgress size={16} /> : <Download size={16} />}
+      >
+        {isLoading ? "Exporting..." : "Export"}
+      </Button>
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        <MenuItem onClick={() => handleExport("csv")}>
           Export as CSV
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onExport("xlsx")}>
+        </MenuItem>
+        <MenuItem onClick={() => handleExport("xlsx")}>
           Export as Excel
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onExport("pdf")}>
+        </MenuItem>
+        <MenuItem onClick={() => handleExport("pdf")}>
           Export as PDF
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        </MenuItem>
+      </Menu>
+    </>
   );
 };
 
