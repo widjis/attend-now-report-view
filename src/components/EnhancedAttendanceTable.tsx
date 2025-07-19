@@ -118,6 +118,8 @@ const EnhancedAttendanceTable: React.FC<EnhancedAttendanceTableProps> = ({
         return "bg-blue-100 text-blue-800";
       case "Late":
         return "bg-red-100 text-red-800";
+      case "Out of Range":
+        return "bg-red-600 text-white border-red-700 font-bold animate-pulse";
       case "Missing":
         return "bg-yellow-100 text-yellow-800";
       default:

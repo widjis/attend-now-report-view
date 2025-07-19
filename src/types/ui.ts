@@ -3,7 +3,7 @@ import { Dayjs } from "dayjs";
 
 export type ScheduleTypeOption = "" | "Fixed" | "TwoShift_Day" | "TwoShift_Night" | "ThreeShift_Morning" | "ThreeShift_Afternoon" | "ThreeShift_Night";
 
-export type StatusOption = "" | "Early" | "OnTime" | "Late" | "Missing";
+export type StatusOption = "" | "Early" | "OnTime" | "Late" | "Out of Range" | "Missing";
 
 export type ExportFormat = "csv" | "pdf" | "xlsx";
 

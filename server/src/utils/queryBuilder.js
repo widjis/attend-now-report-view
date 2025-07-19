@@ -55,10 +55,15 @@ const buildFilterConditions = (filters, toleranceMinutes = 15) => {
   if (isValidValue(clockOutStatus) && clockOutStatus !== 'All') {
     if (clockOutStatus === 'Missing') {
       filterConditions.push(`a.ActualClockOut IS NULL`);
+    } else if (clockOutStatus === 'Out of Range') {
+      filterConditions.push(`(a.ActualClockOut IS NOT NULL AND DATEDIFF(MINUTE, a.ActualClockOut, 
+        CAST(a.TrDate + ' ' + CAST(s.ScheduledClockOut AS VARCHAR(8)) AS DATETIME)) > 120)`);
     } else if (clockOutStatus === 'Early') {
-      filterConditions.push(`(DATEPART(HOUR, a.ActualClockOut) < DATEPART(HOUR, s.ScheduledClockOut) 
+      filterConditions.push(`(a.ActualClockOut IS NOT NULL AND 
+        DATEDIFF(MINUTE, a.ActualClockOut, CAST(a.TrDate + ' ' + CAST(s.ScheduledClockOut AS VARCHAR(8)) AS DATETIME)) <= 120 AND
+        (DATEPART(HOUR, a.ActualClockOut) < DATEPART(HOUR, s.ScheduledClockOut) 
         OR (DATEPART(HOUR, a.ActualClockOut) = DATEPART(HOUR, s.ScheduledClockOut) 
-        AND DATEPART(MINUTE, a.ActualClockOut) < DATEPART(MINUTE, s.ScheduledClockOut) - ${toleranceMinutes}))`);
+        AND DATEPART(MINUTE, a.ActualClockOut) < DATEPART(MINUTE, s.ScheduledClockOut) - ${toleranceMinutes})))`);
     } else if (clockOutStatus === 'Late') {
       filterConditions.push(`(DATEPART(HOUR, a.ActualClockOut) > DATEPART(HOUR, s.ScheduledClockOut))`);
     } else if (clockOutStatus === 'OnTime') {

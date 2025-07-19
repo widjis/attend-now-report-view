@@ -17,6 +17,7 @@ export const STATUS_OPTIONS: SelectOption<StatusOption>[] = [
   { value: "Early", label: "Early" },
   { value: "OnTime", label: "On Time" },
   { value: "Late", label: "Late" },
+  { value: "Out of Range", label: "🚨 Out of Range" },
   { value: "Missing", label: "Missing" },
 ];
 

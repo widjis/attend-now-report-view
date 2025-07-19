@@ -74,11 +74,13 @@ const ScheduleChip = styled(Chip)<{ scheduletype: string }>(({ theme, schedulety
   };
 });
 
-const HighlightedCell = styled(TableCell)<{ highlight?: 'late' | 'early' }>(({ theme, highlight }) => ({
+const HighlightedCell = styled(TableCell)<{ highlight?: 'late' | 'early' | 'out-of-range' }>(({ theme, highlight }) => ({
   backgroundColor: highlight === 'late' 
     ? 'rgba(244, 67, 54, 0.05)' 
     : highlight === 'early' 
     ? 'rgba(255, 193, 7, 0.05)' 
+    : highlight === 'out-of-range'
+    ? 'rgba(244, 67, 54, 0.15)'
     : 'transparent',
 }));
 
@@ -264,12 +266,18 @@ const EnhancedAttendanceTable: React.FC<EnhancedAttendanceTableProps> = ({
                       {formatTime(record.ScheduledClockOut)}
                     </Typography>
                   </TableCell>
-                  <HighlightedCell highlight={record.ClockInStatus === 'Late' ? 'late' : undefined}>
+                  <HighlightedCell highlight={
+                    record.ClockInStatus === 'Out of Range' ? 'out-of-range' :
+                    record.ClockInStatus === 'Late' ? 'late' : undefined
+                  }>
                     <Typography variant="body2" fontFamily="monospace">
                       {formatTime(record.ActualClockIn)}
                     </Typography>
                   </HighlightedCell>
-                  <HighlightedCell highlight={record.ClockOutStatus === 'Early' ? 'early' : undefined}>
+                  <HighlightedCell highlight={
+                    record.ClockOutStatus === 'Out of Range' ? 'out-of-range' :
+                    record.ClockOutStatus === 'Early' ? 'early' : undefined
+                  }>
                     <Typography variant="body2" fontFamily="monospace">
                       {formatTime(record.ActualClockOut)}
                     </Typography>

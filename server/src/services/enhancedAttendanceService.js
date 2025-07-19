@@ -64,9 +64,15 @@ const getEnhancedAttendanceData = async (filters) => {
         END AS ClockInStatus,
         CASE
           WHEN a.ActualClockOut IS NULL THEN 'Missing'
+          -- Late: After scheduled time
           WHEN DATEPART(HOUR, a.ActualClockOut) > DATEPART(HOUR, s.ScheduledClockOut) THEN 'Late'
+          -- OnTime: Within tolerance window (15 minutes before to any time after)
           WHEN DATEPART(HOUR, a.ActualClockOut) = DATEPART(HOUR, s.ScheduledClockOut) 
             AND DATEPART(MINUTE, a.ActualClockOut) >= DATEPART(MINUTE, s.ScheduledClockOut) - ${toleranceMinutes} THEN 'OnTime'
+          -- Out of Range: More than 2 hours early (severe violation)
+          WHEN DATEDIFF(MINUTE, a.ActualClockOut, 
+               CAST(a.TrDate + ' ' + CAST(s.ScheduledClockOut AS VARCHAR(8)) AS DATETIME)) > 120 THEN 'Out of Range'
+          -- Early: Within 2 hours but outside tolerance
           ELSE 'Early'
         END AS ClockOutStatus
       FROM ScheduleData s
@@ -145,9 +151,15 @@ const getEnhancedAttendanceForExport = async (filters) => {
         END AS ClockInStatus,
         CASE
           WHEN a.ActualClockOut IS NULL THEN 'Missing'
+          -- Late: After scheduled time
           WHEN DATEPART(HOUR, a.ActualClockOut) > DATEPART(HOUR, s.ScheduledClockOut) THEN 'Late'
+          -- OnTime: Within tolerance window (15 minutes before to any time after)
           WHEN DATEPART(HOUR, a.ActualClockOut) = DATEPART(HOUR, s.ScheduledClockOut) 
             AND DATEPART(MINUTE, a.ActualClockOut) >= DATEPART(MINUTE, s.ScheduledClockOut) - ${toleranceMinutes} THEN 'OnTime'
+          -- Out of Range: More than 2 hours early (severe violation)
+          WHEN DATEDIFF(MINUTE, a.ActualClockOut, 
+               CAST(a.TrDate + ' ' + CAST(s.ScheduledClockOut AS VARCHAR(8)) AS DATETIME)) > 120 THEN 'Out of Range'
+          -- Early: Within 2 hours but outside tolerance
           ELSE 'Early'
         END AS ClockOutStatus
       FROM ScheduleData s

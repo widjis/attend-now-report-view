@@ -183,7 +183,7 @@ export const statusColors = {
     light: '#4caf50',
     background: '#e8f5e8',
   },
-  onTime: {
+  ontime: {
     main: '#1976d2',
     light: '#42a5f5',
     background: '#e3f2fd',
@@ -192,6 +192,11 @@ export const statusColors = {
     main: '#d32f2f',
     light: '#ef5350',
     background: '#ffebee',
+  },
+  'out of range': {
+    main: '#ffffff',
+    light: '#ffffff',
+    background: '#d32f2f',
   },
   missing: {
     main: '#ed6c02',

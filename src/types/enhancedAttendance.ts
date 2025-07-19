@@ -22,8 +22,8 @@ export interface EnhancedAttendanceRecord {
   ClockOutController?: string | null;
   
   // Status indicators
-  ClockInStatus?: 'Early' | 'OnTime' | 'Late' | 'Missing' | null;
-  ClockOutStatus?: 'Early' | 'OnTime' | 'Late' | 'Missing' | null;
+  ClockInStatus?: 'Early' | 'OnTime' | 'Late' | 'Out of Range' | 'Missing' | null;
+  ClockOutStatus?: 'Early' | 'OnTime' | 'Late' | 'Out of Range' | 'Missing' | null;
 }
 
 export interface EnhancedAttendanceResponse {
@@ -40,8 +40,8 @@ export interface EnhancedAttendanceFilters {
   search?: string;
   department?: string;
   scheduleType?: 'Fixed' | 'TwoShift_Day' | 'TwoShift_Night' | 'ThreeShift_Morning' | 'ThreeShift_Afternoon' | 'ThreeShift_Night' | 'All';
-  clockInStatus?: 'Early' | 'OnTime' | 'Late' | 'Missing' | 'All';
-  clockOutStatus?: 'Early' | 'OnTime' | 'Late' | 'Missing' | 'All';
+  clockInStatus?: 'Early' | 'OnTime' | 'Late' | 'Out of Range' | 'Missing' | 'All';
+  clockOutStatus?: 'Early' | 'OnTime' | 'Late' | 'Out of Range' | 'Missing' | 'All';
   page: number;
   pageSize: number;
 }
