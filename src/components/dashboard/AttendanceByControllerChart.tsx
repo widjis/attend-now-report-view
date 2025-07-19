@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
   Legend 
 } from "recharts";
-import { Card } from "@/components/ui/card";
+import { Box, Typography, Skeleton, useTheme } from "@mui/material";
 import { ControllerAttendance } from "@/types/attendance";
 
 interface AttendanceByControllerChartProps {
@@ -19,19 +19,43 @@ interface AttendanceByControllerChartProps {
 }
 
 const AttendanceByControllerChart = ({ data, isLoading }: AttendanceByControllerChartProps) => {
+  const theme = useTheme();
+  
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-72">
-        <div className="h-48 w-full bg-gray-100 animate-pulse rounded"></div>
-      </div>
+      <Box 
+        display="flex" 
+        alignItems="center" 
+        justifyContent="center" 
+        height={350}
+      >
+        <Skeleton 
+          variant="rectangular" 
+          width="100%" 
+          height={300} 
+          sx={{ borderRadius: 2 }}
+        />
+      </Box>
     );
   }
 
   if (!data || data.length === 0) {
     return (
-      <Card className="flex items-center justify-center h-72 border-dashed">
-        <p className="text-muted-foreground">No controller data available for the selected period</p>
-      </Card>
+      <Box 
+        display="flex" 
+        alignItems="center" 
+        justifyContent="center" 
+        height={350}
+        sx={{
+          border: `2px dashed ${theme.palette.divider}`,
+          borderRadius: 2,
+          bgcolor: 'grey.50'
+        }}
+      >
+        <Typography variant="body1" color="text.secondary">
+          No controller data available for the selected period
+        </Typography>
+      </Box>
     );
   }
 
@@ -47,18 +71,43 @@ const AttendanceByControllerChart = ({ data, isLoading }: AttendanceByController
         }}
         layout="vertical"
       >
-        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
-        <XAxis type="number" />
+        <CartesianGrid 
+          strokeDasharray="3 3" 
+          horizontal={true} 
+          vertical={false} 
+          stroke={theme.palette.divider}
+        />
+        <XAxis 
+          type="number" 
+          tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
+        />
         <YAxis 
           dataKey="controller" 
           type="category" 
           width={150}
-          tick={{ fontSize: 12 }}
+          tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
         />
-        <Tooltip />
+        <Tooltip 
+          contentStyle={{
+            backgroundColor: theme.palette.background.paper,
+            border: `1px solid ${theme.palette.divider}`,
+            borderRadius: theme.spacing(1),
+            boxShadow: theme.shadows[3],
+          }}
+        />
         <Legend />
-        <Bar name="Valid" dataKey="valid" fill="#10b981" radius={[0, 4, 4, 0]} />
-        <Bar name="Invalid" dataKey="invalid" fill="#ef4444" radius={[0, 4, 4, 0]} />
+        <Bar 
+          name="Valid" 
+          dataKey="valid" 
+          fill={theme.palette.success.main} 
+          radius={[0, 4, 4, 0]} 
+        />
+        <Bar 
+          name="Invalid" 
+          dataKey="invalid" 
+          fill={theme.palette.error.main} 
+          radius={[0, 4, 4, 0]} 
+        />
       </BarChart>
     </ResponsiveContainer>
   );

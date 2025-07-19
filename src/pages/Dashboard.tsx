@@ -1,11 +1,33 @@
 import React, { useState } from "react";
-import { format, subDays, subMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { subDays, subMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, ChartBarIcon, ClockIcon } from "lucide-react";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import {
+  Box,
+  Container,
+  Typography,
+  Tabs,
+  Tab,
+  Card,
+  CardContent,
+  CardHeader,
+  Button,
+  Grid,
+  useTheme,
+  useMediaQuery,
+  Paper,
+  Breadcrumbs,
+  Link,
+  styled
+} from "@mui/material";
+import {
+  Dashboard as DashboardIcon,
+  CalendarToday as CalendarIcon,
+  Schedule as ClockIcon,
+  BarChart as ChartBarIcon,
+  Home as HomeIcon
+} from "@mui/icons-material";
+import { Link as RouterLink } from "react-router-dom";
+import dayjs from "dayjs";
 
 // Chart components
 import AttendanceByDateChart from "@/components/dashboard/AttendanceByDateChart";
@@ -17,8 +39,60 @@ import AttendanceSummaryStats from "@/components/dashboard/AttendanceSummaryStat
 import { fetchAttendanceSummary } from "@/api/attendanceApi";
 import { AttendanceTimeframe } from "@/types/attendance";
 
+// Styled components
+const StyledBreadcrumbs = styled(Breadcrumbs)(({ theme }) => ({
+  marginBottom: theme.spacing(3),
+  '& .MuiBreadcrumbs-separator': {
+    color: theme.palette.text.secondary,
+  },
+}));
+
+const HeaderCard = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(3),
+  marginBottom: theme.spacing(3),
+  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+  color: theme.palette.primary.contrastText,
+  borderRadius: theme.spacing(2),
+}));
+
+const StyledCard = styled(Card)(({ theme }) => ({
+  height: '100%',
+  borderRadius: theme.spacing(2),
+  boxShadow: theme.shadows[2],
+  transition: 'box-shadow 0.3s ease-in-out',
+  '&:hover': {
+    boxShadow: theme.shadows[4],
+  },
+}));
+
+const StyledCardHeader = styled(CardHeader)(({ theme }) => ({
+  paddingBottom: theme.spacing(1),
+  '& .MuiCardHeader-title': {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+    fontSize: '1.25rem',
+    fontWeight: 600,
+  },
+}));
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+const TabPanel = ({ children, value, index }: TabPanelProps) => (
+  <div role="tabpanel" hidden={value !== index}>
+    {value === index && <Box>{children}</Box>}
+  </div>
+);
+
 const Dashboard = () => {
   const [timeframe, setTimeframe] = useState<AttendanceTimeframe>("week");
+  const [tabValue, setTabValue] = useState(1); // Default to "week" (index 1)
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
   // Calculate date range based on selected timeframe
   const getDateRange = () => {
@@ -27,28 +101,28 @@ const Dashboard = () => {
     switch(timeframe) {
       case "day":
         return {
-          startDate: format(today, "yyyy-MM-dd"),
-          endDate: format(today, "yyyy-MM-dd")
+          startDate: dayjs(today).format("YYYY-MM-DD"),
+          endDate: dayjs(today).format("YYYY-MM-DD")
         };
       case "week":
         return {
-          startDate: format(startOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd"),
-          endDate: format(endOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd")
+          startDate: dayjs(startOfWeek(today, { weekStartsOn: 1 })).format("YYYY-MM-DD"),
+          endDate: dayjs(endOfWeek(today, { weekStartsOn: 1 })).format("YYYY-MM-DD")
         };
       case "month":
         return {
-          startDate: format(startOfMonth(today), "yyyy-MM-dd"),
-          endDate: format(endOfMonth(today), "yyyy-MM-dd")
+          startDate: dayjs(startOfMonth(today)).format("YYYY-MM-DD"),
+          endDate: dayjs(endOfMonth(today)).format("YYYY-MM-DD")
         };
       case "quarter":
         return {
-          startDate: format(subMonths(today, 3), "yyyy-MM-dd"),
-          endDate: format(today, "yyyy-MM-dd")
+          startDate: dayjs(subMonths(today, 3)).format("YYYY-MM-DD"),
+          endDate: dayjs(today).format("YYYY-MM-DD")
         };
       default:
         return {
-          startDate: format(subDays(today, 7), "yyyy-MM-dd"),
-          endDate: format(today, "yyyy-MM-dd")
+          startDate: dayjs(subDays(today, 7)).format("YYYY-MM-DD"),
+          endDate: dayjs(today).format("YYYY-MM-DD")
         };
     }
   };
@@ -60,99 +134,183 @@ const Dashboard = () => {
     queryKey: ["attendance-summary", timeframe],
     queryFn: () => fetchAttendanceSummary(dateRange.startDate, dateRange.endDate),
   });
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+    const timeframes: AttendanceTimeframe[] = ["day", "week", "month", "quarter"];
+    setTimeframe(timeframes[newValue]);
+  };
   
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        <header className="mb-6 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Attendance Dashboard</h1>
-            <p className="text-gray-500 mt-1">
-              Summary of attendance records and analytics
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Link to="/">
-              <Button variant="outline" className="flex items-center gap-2">
-                <Calendar size={16} />
-                <span>View Attendance</span>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50', py: 3 }}>
+      <Container maxWidth="xl">
+        {/* Breadcrumbs */}
+        <StyledBreadcrumbs aria-label="breadcrumb">
+          <Link
+            component={RouterLink}
+            to="/"
+            color="inherit"
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              textDecoration: 'none',
+              '&:hover': { textDecoration: 'underline' }
+            }}
+          >
+            <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+            Home
+          </Link>
+          <Typography 
+            color="text.primary" 
+            sx={{ display: 'flex', alignItems: 'center' }}
+          >
+            <DashboardIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+            Dashboard
+          </Typography>
+        </StyledBreadcrumbs>
+
+        {/* Header */}
+        <HeaderCard elevation={0}>
+          <Box 
+            display="flex" 
+            justifyContent="space-between" 
+            alignItems={isMobile ? "flex-start" : "center"}
+            flexDirection={isMobile ? "column" : "row"}
+            gap={2}
+          >
+            <Box>
+              <Typography variant="h3" component="h1" fontWeight={700} gutterBottom>
+                Attendance Dashboard
+              </Typography>
+              <Typography variant="h6" sx={{ opacity: 0.9 }}>
+                Summary of attendance records and analytics
+              </Typography>
+            </Box>
+            <Box display="flex" gap={1} flexWrap="wrap">
+              <Button
+                component={RouterLink}
+                to="/enhanced-attendance"
+                variant="contained"
+                color="secondary"
+                startIcon={<CalendarIcon />}
+                sx={{ 
+                  bgcolor: 'rgba(255,255,255,0.2)', 
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
+                }}
+              >
+                View Attendance
               </Button>
-            </Link>
-            <Link to="/schedule">
-              <Button variant="outline" className="flex items-center gap-2">
-                <ClockIcon size={16} />
-                <span>Time Schedule</span>
+              <Button
+                component={RouterLink}
+                to="/schedule"
+                variant="contained"
+                color="secondary"
+                startIcon={<ClockIcon />}
+                sx={{ 
+                  bgcolor: 'rgba(255,255,255,0.2)', 
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
+                }}
+              >
+                Schedule
               </Button>
-            </Link>
-          </div>
-        </header>
+            </Box>
+          </Box>
+        </HeaderCard>
         
-        <Tabs defaultValue="week" className="w-full" onValueChange={(value) => setTimeframe(value as AttendanceTimeframe)}>
-          <div className="mb-6">
-            <TabsList className="grid grid-cols-4 w-full max-w-md mx-auto">
-              <TabsTrigger value="day">Day</TabsTrigger>
-              <TabsTrigger value="week">Week</TabsTrigger>
-              <TabsTrigger value="month">Month</TabsTrigger>
-              <TabsTrigger value="quarter">Quarter</TabsTrigger>
-            </TabsList>
-          </div>
-          
-          <div>
-            <div className="mb-6">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <ClockIcon size={20} />
+        {/* Timeframe Tabs */}
+        <Box sx={{ mb: 3 }}>
+          <Paper sx={{ borderRadius: 2 }}>
+            <Tabs
+              value={tabValue}
+              onChange={handleTabChange}
+              variant={isMobile ? "scrollable" : "fullWidth"}
+              scrollButtons="auto"
+              sx={{
+                '& .MuiTab-root': {
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '1rem',
+                },
+              }}
+            >
+              <Tab label="Day" />
+              <Tab label="Week" />
+              <Tab label="Month" />
+              <Tab label="Quarter" />
+            </Tabs>
+          </Paper>
+        </Box>
+        
+        <TabPanel value={tabValue} index={tabValue}>
+          {/* Summary Stats */}
+          <Box sx={{ mb: 3 }}>
+            <StyledCard>
+              <StyledCardHeader
+                title={
+                  <>
+                    <ClockIcon />
                     Summary Stats
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <AttendanceSummaryStats data={summaryData} isLoading={isLoading} />
-                </CardContent>
-              </Card>
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <ChartBarIcon size={20} />
-                    Attendance by Date
-                  </CardTitle>
-                </CardHeader>
+                  </>
+                }
+              />
+              <CardContent>
+                <AttendanceSummaryStats data={summaryData} isLoading={isLoading} />
+              </CardContent>
+            </StyledCard>
+          </Box>
+          
+          {/* Charts Grid */}
+          <Grid container spacing={3} sx={{ mb: 3 }}>
+            <Grid item xs={12} lg={6}>
+              <StyledCard>
+                <StyledCardHeader
+                  title={
+                    <>
+                      <ChartBarIcon />
+                      Attendance by Date
+                    </>
+                  }
+                />
                 <CardContent>
                   <AttendanceByDateChart data={summaryData?.byDate} isLoading={isLoading} />
                 </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <ChartBarIcon size={20} />
-                    Status Distribution
-                  </CardTitle>
-                </CardHeader>
+              </StyledCard>
+            </Grid>
+            
+            <Grid item xs={12} lg={6}>
+              <StyledCard>
+                <StyledCardHeader
+                  title={
+                    <>
+                      <ChartBarIcon />
+                      Status Distribution
+                    </>
+                  }
+                />
                 <CardContent>
                   <AttendanceStatusChart data={summaryData?.byStatus} isLoading={isLoading} />
                 </CardContent>
-              </Card>
-            </div>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <ChartBarIcon size={20} />
+              </StyledCard>
+            </Grid>
+          </Grid>
+          
+          {/* Controller Chart */}
+          <StyledCard>
+            <StyledCardHeader
+              title={
+                <>
+                  <ChartBarIcon />
                   Attendance by Controller
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <AttendanceByControllerChart data={summaryData?.byController} isLoading={isLoading} />
-              </CardContent>
-            </Card>
-          </div>
-        </Tabs>
-      </div>
-    </div>
+                </>
+              }
+            />
+            <CardContent>
+              <AttendanceByControllerChart data={summaryData?.byController} isLoading={isLoading} />
+            </CardContent>
+          </StyledCard>
+        </TabPanel>
+      </Container>
+    </Box>
   );
 };
 

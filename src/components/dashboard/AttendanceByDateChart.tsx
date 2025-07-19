@@ -10,9 +10,10 @@ import {
   ResponsiveContainer,
   Legend 
 } from "recharts";
-import { format, parseISO } from "date-fns";
-import { Card } from "@/components/ui/card";
+import { parseISO } from "date-fns";
+import { Box, Typography, Skeleton, useTheme } from "@mui/material";
 import { DateAttendance } from "@/types/attendance";
+import dayjs from "dayjs";
 
 interface AttendanceByDateChartProps {
   data?: DateAttendance[];
@@ -20,9 +21,11 @@ interface AttendanceByDateChartProps {
 }
 
 const AttendanceByDateChart = ({ data, isLoading }: AttendanceByDateChartProps) => {
+  const theme = useTheme();
+  
   const formatDate = (dateStr: string) => {
     try {
-      return format(parseISO(dateStr), "MMM dd");
+      return dayjs(parseISO(dateStr)).format("MMM DD");
     } catch (error) {
       return dateStr;
     }
@@ -30,17 +33,39 @@ const AttendanceByDateChart = ({ data, isLoading }: AttendanceByDateChartProps) 
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-72">
-        <div className="h-48 w-full bg-gray-100 animate-pulse rounded"></div>
-      </div>
+      <Box 
+        display="flex" 
+        alignItems="center" 
+        justifyContent="center" 
+        height={350}
+      >
+        <Skeleton 
+          variant="rectangular" 
+          width="100%" 
+          height={300} 
+          sx={{ borderRadius: 2 }}
+        />
+      </Box>
     );
   }
 
   if (!data || data.length === 0) {
     return (
-      <Card className="flex items-center justify-center h-72 border-dashed">
-        <p className="text-muted-foreground">No data available for the selected period</p>
-      </Card>
+      <Box 
+        display="flex" 
+        alignItems="center" 
+        justifyContent="center" 
+        height={350}
+        sx={{
+          border: `2px dashed ${theme.palette.divider}`,
+          borderRadius: 2,
+          bgcolor: 'grey.50'
+        }}
+      >
+        <Typography variant="body1" color="text.secondary">
+          No data available for the selected period
+        </Typography>
+      </Box>
     );
   }
 
@@ -55,22 +80,45 @@ const AttendanceByDateChart = ({ data, isLoading }: AttendanceByDateChartProps) 
           bottom: 30,
         }}
       >
-        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+        <CartesianGrid 
+          strokeDasharray="3 3" 
+          vertical={false} 
+          stroke={theme.palette.divider}
+        />
         <XAxis 
           dataKey="date" 
           tickFormatter={formatDate}
           angle={-45}
           textAnchor="end"
           height={70}
+          tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
         />
-        <YAxis />
+        <YAxis 
+          tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
+        />
         <Tooltip 
           formatter={(value: number) => [value, "Records"]}
-          labelFormatter={(label) => format(parseISO(label), "MMMM dd, yyyy")}
+          labelFormatter={(label) => dayjs(parseISO(label)).format("MMMM DD, YYYY")}
+          contentStyle={{
+            backgroundColor: theme.palette.background.paper,
+            border: `1px solid ${theme.palette.divider}`,
+            borderRadius: theme.spacing(1),
+            boxShadow: theme.shadows[3],
+          }}
         />
         <Legend />
-        <Bar name="Clock In" dataKey="clockIn" fill="#4f46e5" radius={[4, 4, 0, 0]} />
-        <Bar name="Clock Out" dataKey="clockOut" fill="#a855f7" radius={[4, 4, 0, 0]} />
+        <Bar 
+          name="Clock In" 
+          dataKey="clockIn" 
+          fill={theme.palette.primary.main} 
+          radius={[4, 4, 0, 0]} 
+        />
+        <Bar 
+          name="Clock Out" 
+          dataKey="clockOut" 
+          fill={theme.palette.secondary.main} 
+          radius={[4, 4, 0, 0]} 
+        />
       </BarChart>
     </ResponsiveContainer>
   );

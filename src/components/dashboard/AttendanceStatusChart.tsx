@@ -1,7 +1,7 @@
 
 import React from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
-import { Card } from "@/components/ui/card";
+import { Box, Typography, Skeleton, useTheme } from "@mui/material";
 import { StatusAttendance } from "@/types/attendance";
 
 interface AttendanceStatusChartProps {
@@ -9,22 +9,52 @@ interface AttendanceStatusChartProps {
   isLoading: boolean;
 }
 
-const COLORS = ["#4f46e5", "#a855f7", "#ef4444", "#10b981"];
-
 const AttendanceStatusChart = ({ data, isLoading }: AttendanceStatusChartProps) => {
+  const theme = useTheme();
+  
+  const COLORS = [
+    theme.palette.primary.main,
+    theme.palette.secondary.main,
+    theme.palette.error.main,
+    theme.palette.success.main,
+    theme.palette.warning.main,
+    theme.palette.info.main,
+  ];
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-72">
-        <div className="h-48 w-48 bg-gray-100 animate-pulse rounded-full"></div>
-      </div>
+      <Box 
+        display="flex" 
+        alignItems="center" 
+        justifyContent="center" 
+        height={350}
+      >
+        <Skeleton 
+          variant="circular" 
+          width={240} 
+          height={240} 
+        />
+      </Box>
     );
   }
 
   if (!data || data.length === 0) {
     return (
-      <Card className="flex items-center justify-center h-72 border-dashed">
-        <p className="text-muted-foreground">No data available for the selected period</p>
-      </Card>
+      <Box 
+        display="flex" 
+        alignItems="center" 
+        justifyContent="center" 
+        height={350}
+        sx={{
+          border: `2px dashed ${theme.palette.divider}`,
+          borderRadius: 2,
+          bgcolor: 'grey.50'
+        }}
+      >
+        <Typography variant="body1" color="text.secondary">
+          No data available for the selected period
+        </Typography>
+      </Box>
     );
   }
 
@@ -50,7 +80,15 @@ const AttendanceStatusChart = ({ data, isLoading }: AttendanceStatusChartProps) 
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>
-        <Tooltip formatter={(value) => [`${value} records`, 'Count']} />
+        <Tooltip 
+          formatter={(value) => [`${value} records`, 'Count']}
+          contentStyle={{
+            backgroundColor: theme.palette.background.paper,
+            border: `1px solid ${theme.palette.divider}`,
+            borderRadius: theme.spacing(1),
+            boxShadow: theme.shadows[3],
+          }}
+        />
         <Legend />
       </PieChart>
     </ResponsiveContainer>
