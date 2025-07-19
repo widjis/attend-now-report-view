@@ -1,0 +1,30 @@
+{
+  "name": "mti-attendance-migration",
+  "version": "1.0.0",
+  "description": "Database migration script for MTI Attendance System from DataDBEnt to EmployeeWorkflow",
+  "main": "migrate-data.js",
+  "scripts": {
+    "start": "node migration-tool.js",
+    "tool": "node migration-tool.js",
+    "setup": "node setup-check.js",
+    "migrate": "node migrate-data.js",
+    "migrate:dry-run": "DRY_RUN=true node migrate-data.js",
+    "validate": "node validate-migration.js"
+  },
+  "dependencies": {
+    "mssql": "^10.0.1",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "keywords": [
+    "database",
+    "migration",
+    "mssql",
+    "attendance",
+    "mti"
+  ],
+  "author": "MTI Development Team",
+  "license": "MIT"
+}
