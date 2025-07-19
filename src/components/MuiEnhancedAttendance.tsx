@@ -13,8 +13,6 @@ import {
   InputLabel,
   Button,
   Chip,
-  Breadcrumbs,
-  Link,
   Card,
   CardContent,
   Divider,
@@ -27,14 +25,13 @@ import { styled } from "@mui/material/styles";
 import {
   Search as SearchIcon,
   FileDownload as FileDownloadIcon,
-  Dashboard as DashboardIcon,
-  Schedule as ScheduleIcon,
   CalendarToday as CalendarIcon,
   FilterList as FilterIcon,
 } from "@mui/icons-material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import PageHeader from "@/components/PageHeader";
 import MuiEnhancedAttendanceTable from "@/components/MuiEnhancedAttendanceTable";
 import { 
   useEnhancedAttendanceFilters, 
@@ -55,12 +52,7 @@ const FilterCard = styled(Card)(({ theme }) => ({
   boxShadow: theme.shadows[2],
 }));
 
-const StyledBreadcrumbs = styled(Breadcrumbs)(({ theme }) => ({
-  marginBottom: theme.spacing(3),
-  '& .MuiBreadcrumbs-separator': {
-    color: theme.palette.text.secondary,
-  },
-}));
+
 
 const ExportButton = styled(Button)(({ theme }) => ({
   borderRadius: theme.shape.borderRadius * 2,
@@ -99,52 +91,12 @@ const MuiEnhancedAttendance: React.FC = () => {
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <StyledContainer maxWidth="xl">
-        {/* Breadcrumbs */}
-        <StyledBreadcrumbs aria-label="breadcrumb">
-          <Link
-            color="inherit"
-            href="/dashboard"
-            sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              textDecoration: 'none',
-              '&:hover': { textDecoration: 'underline' }
-            }}
-          >
-            <DashboardIcon sx={{ mr: 0.5 }} fontSize="inherit" />
-            Dashboard
-          </Link>
-          <Link
-            color="inherit"
-            href="/schedule"
-            sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              textDecoration: 'none',
-              '&:hover': { textDecoration: 'underline' }
-            }}
-          >
-            <ScheduleIcon sx={{ mr: 0.5 }} fontSize="inherit" />
-            Schedule
-          </Link>
-          <Typography 
-            color="text.primary" 
-            sx={{ display: 'flex', alignItems: 'center' }}
-          >
-            <CalendarIcon sx={{ mr: 0.5 }} fontSize="inherit" />
-            Enhanced Attendance Report
-          </Typography>
-        </StyledBreadcrumbs>
-
         {/* Header */}
-        <Box mb={3}>
-          <Typography variant="h4" component="h1" gutterBottom fontWeight={600}>
-            Enhanced Attendance Report
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Comprehensive attendance tracking with schedule analysis and status monitoring
-          </Typography>
-        </Box>
+        <PageHeader
+          title="Enhanced Attendance Report"
+          subtitle="Comprehensive attendance tracking with schedule analysis and status monitoring"
+          currentPage="enhanced-attendance"
+        />
 
         {/* Filters */}
         <FilterCard>
@@ -302,8 +254,9 @@ const MuiEnhancedAttendance: React.FC = () => {
                   variant="outlined"
                   startIcon={<FileDownloadIcon />}
                   onClick={() => handleExportClick("csv")}
-                  disabled={exportState.isExporting}
+                  disabled={exportState.isExporting || !attendanceData?.total}
                   size="small"
+                  title={!attendanceData?.total ? "No data available for export" : "Export to CSV"}
                 >
                   CSV
                 </ExportButton>
@@ -311,8 +264,9 @@ const MuiEnhancedAttendance: React.FC = () => {
                   variant="outlined"
                   startIcon={<FileDownloadIcon />}
                   onClick={() => handleExportClick("pdf")}
-                  disabled={exportState.isExporting}
+                  disabled={exportState.isExporting || !attendanceData?.total}
                   size="small"
+                  title={!attendanceData?.total ? "No data available for export" : "Export to PDF"}
                 >
                   PDF
                 </ExportButton>
@@ -320,11 +274,17 @@ const MuiEnhancedAttendance: React.FC = () => {
                   variant="outlined"
                   startIcon={<FileDownloadIcon />}
                   onClick={() => handleExportClick("xlsx")}
-                  disabled={exportState.isExporting}
+                  disabled={exportState.isExporting || !attendanceData?.total}
                   size="small"
+                  title={!attendanceData?.total ? "No data available for export" : "Export to Excel"}
                 >
                   XLSX
                 </ExportButton>
+                {!attendanceData?.total && (
+                  <Typography variant="caption" color="text.secondary" sx={{ alignSelf: 'center', ml: 1 }}>
+                    No data to export
+                  </Typography>
+                )}
               </Box>
             </Box>
 

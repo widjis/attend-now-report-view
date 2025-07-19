@@ -147,6 +147,18 @@ exports.exportEnhancedAttendanceToXlsx = async (req, res, next) => {
       return res.status(400).json({ error: 'Start date and end date are required' });
     }
 
+    // Validate date format
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    
+    if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
+      return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD format.' });
+    }
+
+    if (startDateObj > endDateObj) {
+      return res.status(400).json({ error: 'Start date cannot be after end date' });
+    }
+
     const filters = {
       startDate,
       endDate,
@@ -158,10 +170,45 @@ exports.exportEnhancedAttendanceToXlsx = async (req, res, next) => {
     };
 
     console.log('XLSX Export filters:', filters);
+    
     const data = await getEnhancedAttendanceForExport(filters);
+    
+    if (!data) {
+      console.log('XLSX Export - No data returned from service');
+      return res.status(404).json({ error: 'No data found for the specified criteria' });
+    }
+    
+    console.log(`XLSX Export - Retrieved ${data.length} records`);
     await exportToXlsx(data, res, startDate, endDate);
+    
   } catch (err) {
     console.error('Error exporting enhanced attendance to XLSX:', err);
-    res.status(500).json({ error: 'Internal Server Error', message: err.message });
+    
+    // Check if response has already been sent
+    if (res.headersSent) {
+      console.error('Response already sent, cannot send error response');
+      return;
+    }
+    
+    // Provide specific error messages based on error type
+    let errorMessage = 'Internal Server Error';
+    let statusCode = 500;
+    
+    if (err.message.includes('Invalid data format')) {
+      errorMessage = 'Data format error during export';
+      statusCode = 422;
+    } else if (err.message.includes('database') || err.message.includes('connection')) {
+      errorMessage = 'Database connection error';
+      statusCode = 503;
+    } else if (err.message.includes('timeout')) {
+      errorMessage = 'Export operation timed out. Please try with a smaller date range.';
+      statusCode = 408;
+    }
+    
+    res.status(statusCode).json({ 
+      error: errorMessage, 
+      message: err.message,
+      timestamp: new Date().toISOString()
+    });
   }
 };

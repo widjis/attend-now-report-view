@@ -90,7 +90,15 @@ export const fetchEnhancedAttendanceData = async (filters: EnhancedAttendanceFil
 };
 
 export async function exportEnhancedAttendanceCsv(params: Record<string, string | number | undefined>) {
-  const query = new URLSearchParams(params as Record<string, string>).toString();
+  // Filter out undefined values
+  const filteredParams: Record<string, string> = {};
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      filteredParams[key] = String(value);
+    }
+  });
+  
+  const query = new URLSearchParams(filteredParams).toString();
   const url = `${API_BASE_URL}/enhanced-attendance/export/csv?${query}`;
   const response = await fetch(url, {
     method: 'GET',
@@ -106,7 +114,15 @@ export async function exportEnhancedAttendanceCsv(params: Record<string, string 
 }
 
 export async function exportEnhancedAttendancePdf(params: Record<string, string | number | undefined>) {
-  const query = new URLSearchParams(params as Record<string, string>).toString();
+  // Filter out undefined values
+  const filteredParams: Record<string, string> = {};
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      filteredParams[key] = String(value);
+    }
+  });
+  
+  const query = new URLSearchParams(filteredParams).toString();
   const url = `${API_BASE_URL}/enhanced-attendance/export/pdf?${query}`;
   const response = await fetch(url, {
     method: 'GET',
@@ -122,17 +138,80 @@ export async function exportEnhancedAttendancePdf(params: Record<string, string 
 }
 
 export async function exportEnhancedAttendanceXlsx(params: Record<string, string | number | undefined>) {
-  const query = new URLSearchParams(params as Record<string, string>).toString();
-  const url = `${API_BASE_URL}/enhanced-attendance/export/xlsx?${query}`;
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    },
-  });
-  if (!response.ok) {
-    throw new Error('Failed to export XLSX');
+  try {
+    // Filter out undefined values
+    const filteredParams: Record<string, string> = {};
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        filteredParams[key] = String(value);
+      }
+    });
+    
+    const query = new URLSearchParams(filteredParams).toString();
+    const url = `${API_BASE_URL}/enhanced-attendance/export/xlsx?${query}`;
+    
+    console.log('XLSX Export - Requesting:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      },
+    });
+    
+    if (!response.ok) {
+      let errorMessage = `Export failed with status ${response.status}`;
+      
+      // Try to parse error response
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+        }
+      }
+      
+      throw new Error(errorMessage);
+    }
+    
+    // Verify content type
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('spreadsheetml.sheet')) {
+      console.warn('Unexpected content type:', contentType);
+    }
+    
+    const blob = await response.blob();
+    
+    // Validate blob size
+    if (blob.size === 0) {
+      throw new Error('Export file is empty');
+    }
+    
+    console.log(`XLSX Export - Downloaded ${blob.size} bytes`);
+    return blob;
+    
+  } catch (error) {
+    console.error('XLSX Export error:', error);
+    
+    // Provide user-friendly error messages
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Network error: Unable to connect to server. Please check your connection.');
+    }
+    
+    if (error.message.includes('timeout')) {
+      throw new Error('Export timed out. Please try with a smaller date range.');
+    }
+    
+    if (error.message.includes('404')) {
+      throw new Error('No data found for the selected criteria.');
+    }
+    
+    if (error.message.includes('400')) {
+      throw new Error('Invalid request parameters. Please check your date range and filters.');
+    }
+    
+    throw error;
   }
-  const blob = await response.blob();
-  return blob;
 }

@@ -10,26 +10,20 @@ import {
   Card,
   CardContent,
   CardHeader,
-  Button,
   Grid,
   useTheme,
   useMediaQuery,
   Paper,
-  Breadcrumbs,
-  Link,
   styled
 } from "@mui/material";
 import {
-  Dashboard as DashboardIcon,
-  CalendarToday as CalendarIcon,
-  Schedule as ClockIcon,
   BarChart as ChartBarIcon,
-  Home as HomeIcon
+  Schedule as ClockIcon
 } from "@mui/icons-material";
-import { Link as RouterLink } from "react-router-dom";
 import dayjs from "dayjs";
 
-// Chart components
+// Components
+import PageHeader from "@/components/PageHeader";
 import AttendanceByDateChart from "@/components/dashboard/AttendanceByDateChart";
 import AttendanceByControllerChart from "@/components/dashboard/AttendanceByControllerChart";
 import AttendanceStatusChart from "@/components/dashboard/AttendanceStatusChart";
@@ -38,22 +32,6 @@ import AttendanceSummaryStats from "@/components/dashboard/AttendanceSummaryStat
 // API
 import { fetchAttendanceSummary } from "@/api/attendanceApi";
 import { AttendanceTimeframe } from "@/types/attendance";
-
-// Styled components
-const StyledBreadcrumbs = styled(Breadcrumbs)(({ theme }) => ({
-  marginBottom: theme.spacing(3),
-  '& .MuiBreadcrumbs-separator': {
-    color: theme.palette.text.secondary,
-  },
-}));
-
-const HeaderCard = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(3),
-  marginBottom: theme.spacing(3),
-  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-  color: theme.palette.primary.contrastText,
-  borderRadius: theme.spacing(2),
-}));
 
 const StyledCard = styled(Card)(({ theme }) => ({
   height: '100%',
@@ -144,78 +122,11 @@ const Dashboard = () => {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50', py: 3 }}>
       <Container maxWidth="xl">
-        {/* Breadcrumbs */}
-        <StyledBreadcrumbs aria-label="breadcrumb">
-          <Link
-            component={RouterLink}
-            to="/"
-            color="inherit"
-            sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              textDecoration: 'none',
-              '&:hover': { textDecoration: 'underline' }
-            }}
-          >
-            <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
-            Home
-          </Link>
-          <Typography 
-            color="text.primary" 
-            sx={{ display: 'flex', alignItems: 'center' }}
-          >
-            <DashboardIcon sx={{ mr: 0.5 }} fontSize="inherit" />
-            Dashboard
-          </Typography>
-        </StyledBreadcrumbs>
-
-        {/* Header */}
-        <HeaderCard elevation={0}>
-          <Box 
-            display="flex" 
-            justifyContent="space-between" 
-            alignItems={isMobile ? "flex-start" : "center"}
-            flexDirection={isMobile ? "column" : "row"}
-            gap={2}
-          >
-            <Box>
-              <Typography variant="h3" component="h1" fontWeight={700} gutterBottom>
-                Attendance Dashboard
-              </Typography>
-              <Typography variant="h6" sx={{ opacity: 0.9 }}>
-                Summary of attendance records and analytics
-              </Typography>
-            </Box>
-            <Box display="flex" gap={1} flexWrap="wrap">
-              <Button
-                component={RouterLink}
-                to="/enhanced-attendance"
-                variant="contained"
-                color="secondary"
-                startIcon={<CalendarIcon />}
-                sx={{ 
-                  bgcolor: 'rgba(255,255,255,0.2)', 
-                  '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
-                }}
-              >
-                View Attendance
-              </Button>
-              <Button
-                component={RouterLink}
-                to="/schedule"
-                variant="contained"
-                color="secondary"
-                startIcon={<ClockIcon />}
-                sx={{ 
-                  bgcolor: 'rgba(255,255,255,0.2)', 
-                  '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
-                }}
-              >
-                Schedule
-              </Button>
-            </Box>
-          </Box>
-        </HeaderCard>
+        <PageHeader
+          title="Attendance Dashboard"
+          subtitle="Summary of attendance records and analytics"
+          currentPage="dashboard"
+        />
         
         {/* Timeframe Tabs */}
         <Box sx={{ mb: 3 }}>

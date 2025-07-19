@@ -47,7 +47,7 @@ export const useEnhancedAttendanceFilters = () => {
     pageSize: filters.pageSize,
   });
 
-  // Convert filters to export format
+  // Convert filters to export format (exclude pagination for full export)
   const buildExportParams = (): Record<string, string | number | undefined> => {
     const apiFilters = buildApiFilters();
     return {
@@ -58,8 +58,7 @@ export const useEnhancedAttendanceFilters = () => {
       scheduleType: apiFilters.scheduleType,
       clockInStatus: apiFilters.clockInStatus,
       clockOutStatus: apiFilters.clockOutStatus,
-      page: apiFilters.page,
-      pageSize: apiFilters.pageSize,
+      // Exclude pagination for exports to get all data
     };
   };
 
@@ -88,6 +87,8 @@ export const useEnhancedAttendanceExport = () => {
     setExportState({ isExporting: true, format });
     
     try {
+      console.log(`Starting ${format.toUpperCase()} export with params:`, exportParams);
+      
       let blob: Blob;
       let filename: string;
 
@@ -106,6 +107,15 @@ export const useEnhancedAttendanceExport = () => {
           break;
       }
 
+      // Check if the blob is empty or very small (likely just headers)
+      if (blob.size < 1000) {
+        console.warn(`Export blob size is very small (${blob.size} bytes), might contain no data`);
+        toast.warning(`${format.toUpperCase()} export completed, but no data was found for the selected criteria. Please check your date range and filters.`);
+      } else {
+        console.log(`Export blob size: ${blob.size} bytes`);
+        toast.success(`${format.toUpperCase()} export completed successfully!`);
+      }
+
       // Create download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -116,10 +126,23 @@ export const useEnhancedAttendanceExport = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      toast.success(`${format.toUpperCase()} export completed successfully!`);
     } catch (error) {
       console.error(`Error exporting ${format}:`, error);
-      toast.error(`Failed to export ${format.toUpperCase()}. Please try again.`);
+      
+      // Provide more specific error messages
+      let errorMessage = `Failed to export ${format.toUpperCase()}. Please try again.`;
+      
+      if (error instanceof Error) {
+        if (error.message.includes('No data found')) {
+          errorMessage = `No data found for the selected date range and filters. Please adjust your criteria and try again.`;
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = `Network error during export. Please check your connection and try again.`;
+        } else if (error.message.includes('timeout')) {
+          errorMessage = `Export timed out. Please try with a smaller date range.`;
+        }
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setExportState({ isExporting: false });
     }

@@ -8,26 +8,35 @@ const buildFilterConditions = (filters, toleranceMinutes = 15) => {
     { name: 'endDate', value: filters.endDate }
   ];
   
+  // Helper function to check if a value is valid (not null, undefined, empty string, or literal "undefined")
+  const isValidValue = (value) => {
+    return value && 
+           value !== 'undefined' && 
+           value !== 'null' && 
+           value !== '' && 
+           value.toString().trim() !== '';
+  };
+  
   // Add search filter if provided
-  if (search) {
+  if (isValidValue(search)) {
     filterConditions.push(`(s.StaffNo LIKE @search OR s.Name LIKE @search)`);
     queryParams.push({ name: 'search', value: `%${search}%` });
   }
   
   // Add department filter if provided
-  if (department && department !== 'all') {
+  if (isValidValue(department) && department !== 'all') {
     filterConditions.push(`s.Department = @department`);
     queryParams.push({ name: 'department', value: department });
   }
   
   // Add schedule type filter if provided
-  if (scheduleType && scheduleType !== 'All') {
+  if (isValidValue(scheduleType) && scheduleType !== 'All') {
     filterConditions.push(`s.ScheduleType = @scheduleType`);
     queryParams.push({ name: 'scheduleType', value: scheduleType });
   }
   
   // Add clock in status filter if provided
-  if (clockInStatus && clockInStatus !== 'All') {
+  if (isValidValue(clockInStatus) && clockInStatus !== 'All') {
     if (clockInStatus === 'Missing') {
       filterConditions.push(`a.ActualClockIn IS NULL`);
     } else if (clockInStatus === 'Early') {
@@ -43,7 +52,7 @@ const buildFilterConditions = (filters, toleranceMinutes = 15) => {
   }
   
   // Add clock out status filter if provided
-  if (clockOutStatus && clockOutStatus !== 'All') {
+  if (isValidValue(clockOutStatus) && clockOutStatus !== 'All') {
     if (clockOutStatus === 'Missing') {
       filterConditions.push(`a.ActualClockOut IS NULL`);
     } else if (clockOutStatus === 'Early') {
@@ -102,8 +111,38 @@ const buildBaseCTEQueries = (toleranceMinutes = 15) => {
       SELECT 
         a.StaffNo,
         a.TrDate,
-        MIN(CASE WHEN a.ClockEvent = 'Clock In' THEN a.TrDateTime END) AS ActualClockIn,
-        MAX(CASE WHEN a.ClockEvent = 'Clock Out' THEN a.TrDateTime END) AS ActualClockOut,
+        -- First try to get normal Clock In, if NULL then try Outside Range within 3 hours
+        COALESCE(
+          MIN(CASE WHEN a.ClockEvent = 'Clock In' THEN a.TrDateTime END),
+          (SELECT TOP 1 ar.TrDateTime 
+           FROM tblAttendanceReport ar 
+           INNER JOIN ScheduleData sd ON ar.StaffNo = sd.StaffNo
+           WHERE ar.StaffNo = a.StaffNo 
+             AND ar.TrDate = a.TrDate 
+             AND ar.ClockEvent = 'Outside Range'
+             AND ABS(DATEDIFF(MINUTE, 
+                 CAST(a.TrDate + ' ' + CAST(sd.ScheduledClockIn AS VARCHAR(8)) AS DATETIME), 
+                 ar.TrDateTime)) <= 180  -- Within 3 hours (180 minutes)
+           ORDER BY ABS(DATEDIFF(MINUTE, 
+               CAST(a.TrDate + ' ' + CAST(sd.ScheduledClockIn AS VARCHAR(8)) AS DATETIME), 
+               ar.TrDateTime)) ASC)
+        ) AS ActualClockIn,
+        -- First try to get normal Clock Out, if NULL then try Outside Range within 3 hours
+        COALESCE(
+          MAX(CASE WHEN a.ClockEvent = 'Clock Out' THEN a.TrDateTime END),
+          (SELECT TOP 1 ar.TrDateTime 
+           FROM tblAttendanceReport ar 
+           INNER JOIN ScheduleData sd ON ar.StaffNo = sd.StaffNo
+           WHERE ar.StaffNo = a.StaffNo 
+             AND ar.TrDate = a.TrDate 
+             AND ar.ClockEvent = 'Outside Range'
+             AND ABS(DATEDIFF(MINUTE, 
+                 CAST(a.TrDate + ' ' + CAST(sd.ScheduledClockOut AS VARCHAR(8)) AS DATETIME), 
+                 ar.TrDateTime)) <= 180  -- Within 3 hours (180 minutes)
+           ORDER BY ABS(DATEDIFF(MINUTE, 
+               CAST(a.TrDate + ' ' + CAST(sd.ScheduledClockOut AS VARCHAR(8)) AS DATETIME), 
+               ar.TrDateTime)) ASC)
+        ) AS ActualClockOut,
         MIN(CASE WHEN a.ClockEvent = 'Clock In' THEN a.TrController END) AS ClockInController,
         MAX(CASE WHEN a.ClockEvent = 'Clock Out' THEN a.TrController END) AS ClockOutController,
         a.Position
