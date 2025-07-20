@@ -17,13 +17,12 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { TimeSchedule } from "../types/schedule";
+import { Badge } from "@/components/ui/badge";
+import { MTIUser } from "../types/schedule";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { formatInTimeZone } from "date-fns-tz";
 
 interface TimeScheduleTableProps {
-  data: TimeSchedule[];
+  data: MTIUser[];
   isLoading: boolean;
   currentPage: number;
   totalPages: number;
@@ -39,10 +38,10 @@ const TimeScheduleTable: React.FC<TimeScheduleTableProps> = ({
   onPageChange,
   className,
 }) => {
-  const [sortColumn, setSortColumn] = useState<keyof TimeSchedule | null>(null);
+  const [sortColumn, setSortColumn] = useState<keyof MTIUser | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
-  const handleSort = (column: keyof TimeSchedule) => {
+  const handleSort = (column: keyof MTIUser) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
@@ -53,13 +52,21 @@ const TimeScheduleTable: React.FC<TimeScheduleTableProps> = ({
 
   const formatClockTime = (timeString: string | null): string => {
     if (!timeString) return "N/A";
-    // Assume timeString is in ISO format or 'YYYY-MM-DD HH:mm:ss', extract time part
-    // Try to extract HH:mm from the string
-    const match = timeString.match(/(\d{2}):(\d{2})/);
-    if (match) {
-      return `${match[1]}:${match[2]}`;
-    }
+    // Time is already formatted as HH:MM from the backend
     return timeString;
+  };
+
+  const getDayTypeBadgeColor = (dayType: string | undefined) => {
+    switch (dayType?.toLowerCase()) {
+      case 'weekday':
+        return 'default';
+      case 'weekend':
+        return 'secondary';
+      case 'holiday':
+        return 'destructive';
+      default:
+        return 'outline';
+    }
   };
 
   // Display skeleton loader while loading
@@ -71,7 +78,10 @@ const TimeScheduleTable: React.FC<TimeScheduleTableProps> = ({
             <TableRow>
               <TableHead>Employee ID</TableHead>
               <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
+              <TableHead>Department</TableHead>
+              <TableHead>Division</TableHead>
+              <TableHead>Section</TableHead>
+              <TableHead>Day Type</TableHead>
               <TableHead>Time In</TableHead>
               <TableHead>Time Out</TableHead>
             </TableRow>
@@ -79,7 +89,7 @@ const TimeScheduleTable: React.FC<TimeScheduleTableProps> = ({
           <TableBody>
             {Array.from({ length: 10 }).map((_, i) => (
               <TableRow key={i}>
-                {Array.from({ length: 5 }).map((_, j) => (
+                {Array.from({ length: 8 }).map((_, j) => (
                   <TableCell key={j}>
                     <div className="h-4 w-full animate-pulse bg-gray-200 rounded"></div>
                   </TableCell>
@@ -133,7 +143,7 @@ const TimeScheduleTable: React.FC<TimeScheduleTableProps> = ({
     });
   }
 
-  const getSortIndicator = (column: keyof TimeSchedule) => {
+  const getSortIndicator = (column: keyof MTIUser) => {
     if (sortColumn !== column) return null;
     return sortDirection === "asc" ? " ▲" : " ▼";
   };
@@ -146,47 +156,103 @@ const TimeScheduleTable: React.FC<TimeScheduleTableProps> = ({
             <TableRow>
               <TableHead 
                 className="cursor-pointer" 
-                onClick={() => handleSort("StaffNo")}
+                onClick={() => handleSort("employee_id")}
               >
-                Employee ID {getSortIndicator("StaffNo")}
+                Employee ID {getSortIndicator("employee_id")}
               </TableHead>
               <TableHead 
                 className="cursor-pointer" 
-                onClick={() => handleSort("Name")}
+                onClick={() => handleSort("employee_name")}
               >
-                Name {getSortIndicator("Name")}
+                Name {getSortIndicator("employee_name")}
               </TableHead>
               <TableHead 
                 className="cursor-pointer" 
-                onClick={() => handleSort("Email")}
+                onClick={() => handleSort("department")}
               >
-                Email {getSortIndicator("Email")}
+                Department {getSortIndicator("department")}
               </TableHead>
               <TableHead 
                 className="cursor-pointer" 
-                onClick={() => handleSort("TimeIn")}
+                onClick={() => handleSort("division")}
               >
-                Time In {getSortIndicator("TimeIn")}
+                Division {getSortIndicator("division")}
               </TableHead>
               <TableHead 
                 className="cursor-pointer" 
-                onClick={() => handleSort("TimeOut")}
+                onClick={() => handleSort("section")}
               >
-                Time Out {getSortIndicator("TimeOut")}
+                Section {getSortIndicator("section")}
+              </TableHead>
+              <TableHead 
+                className="cursor-pointer" 
+                onClick={() => handleSort("day_type")}
+              >
+                Day Type {getSortIndicator("day_type")}
+              </TableHead>
+              <TableHead 
+                className="cursor-pointer" 
+                onClick={() => handleSort("time_in")}
+              >
+                Time In {getSortIndicator("time_in")}
+              </TableHead>
+              <TableHead 
+                className="cursor-pointer" 
+                onClick={() => handleSort("time_out")}
+              >
+                Time Out {getSortIndicator("time_out")}
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sortedData.map((record, index) => (
-              <TableRow key={index} className="hover:bg-gray-50">
-                <TableCell className="font-medium">{record.StaffNo || "N/A"}</TableCell>
-                <TableCell>{record.Name || "N/A"}</TableCell>
-                <TableCell>{record.Email || "N/A"}</TableCell>
-                <TableCell className={!record.TimeIn ? "bg-[#FEF7CD]" : ""}>
-                  {formatClockTime(record.TimeIn)}
+              <TableRow key={record.employee_id || index} className="hover:bg-gray-50">
+                <TableCell className="font-medium">
+                  {record.employee_id || record.StaffNo || "N/A"}
                 </TableCell>
-                <TableCell className={!record.TimeOut ? "bg-[#FEF7CD]" : ""}>
-                  {formatClockTime(record.TimeOut)}
+                <TableCell>
+                  <div className="flex flex-col">
+                    <span className="font-medium">
+                      {record.employee_name || record.Name || "N/A"}
+                    </span>
+                    {record.position_title && (
+                      <span className="text-xs text-gray-500">
+                        {record.position_title}
+                      </span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>{record.department || "N/A"}</TableCell>
+                <TableCell>{record.division || "N/A"}</TableCell>
+                <TableCell>{record.section || "N/A"}</TableCell>
+                <TableCell>
+                  {record.day_type ? (
+                    <Badge variant={getDayTypeBadgeColor(record.day_type)}>
+                      {record.day_type}
+                    </Badge>
+                  ) : (
+                    "N/A"
+                  )}
+                </TableCell>
+                <TableCell className={!record.time_in ? "bg-[#FEF7CD]" : ""}>
+                  <div className="flex flex-col">
+                    <span>{formatClockTime(record.time_in)}</span>
+                    {record.next_day && record.time_in && (
+                      <Badge variant="outline" className="text-xs mt-1 w-fit">
+                        Next Day
+                      </Badge>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className={!record.time_out ? "bg-[#FEF7CD]" : ""}>
+                  <div className="flex flex-col">
+                    <span>{formatClockTime(record.time_out)}</span>
+                    {record.next_day && record.time_out && (
+                      <Badge variant="outline" className="text-xs mt-1 w-fit">
+                        Next Day
+                      </Badge>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

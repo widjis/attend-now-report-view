@@ -1,6 +1,21 @@
 
 const { poolPromise } = require('../config/db');
 const { buildFilterConditions, buildBaseCTEQueries } = require('../utils/queryBuilder');
+const { formatTime } = require('../utils/dateTimeFormatter');
+
+// Helper function to format time fields in attendance data
+const formatAttendanceData = (data) => {
+  return data.map(row => ({
+    ...row,
+    Date: row.Date ? new Date(row.Date).toISOString().split('T')[0] : '',
+    // Format scheduled times to HH:MM to match frontend display
+    ScheduledClockIn: row.ScheduledClockIn ? formatTime(new Date(row.ScheduledClockIn)) : '',
+    ScheduledClockOut: row.ScheduledClockOut ? formatTime(new Date(row.ScheduledClockOut)) : '',
+    // Format actual times to HH:MM to match frontend display
+    ActualClockIn: row.ActualClockIn ? formatTime(new Date(row.ActualClockIn)) : '',
+    ActualClockOut: row.ActualClockOut ? formatTime(new Date(row.ActualClockOut)) : ''
+  }));
+};
 
 // Get enhanced attendance data with filters and pagination
 const getEnhancedAttendanceData = async (filters) => {
@@ -18,11 +33,11 @@ const getEnhancedAttendanceData = async (filters) => {
     ,
     FilteredData AS (
       SELECT 
-        s.StaffNo,
-        s.Name,
-        s.Department,
-        a.Position,
-        a.TrDate AS Date,
+        s.StaffNo AS StaffNo,
+        s.Name AS Name,
+        s.Department AS Department,
+        COALESCE(a.Position, 'N/A') AS Position,
+        COALESCE(a.TrDate, CAST(@startDate AS DATE)) AS Date,
         s.ScheduledClockIn,
         s.ScheduledClockOut,
         s.ScheduleType,
@@ -31,7 +46,7 @@ const getEnhancedAttendanceData = async (filters) => {
         a.ClockInController,
         a.ClockOutController
       FROM ScheduleData s
-      JOIN AttendanceData a ON s.StaffNo = a.StaffNo
+      LEFT JOIN AttendanceData a ON s.StaffNo = a.StaffNo AND a.TrDate BETWEEN @startDate AND @endDate
       ${whereClause}
     )
     SELECT COUNT(*) AS total FROM FilteredData
@@ -43,11 +58,11 @@ const getEnhancedAttendanceData = async (filters) => {
     ,
     FilteredData AS (
       SELECT 
-        s.StaffNo,
-        s.Name,
-        s.Department,
-        a.Position,
-        a.TrDate AS Date,
+        s.StaffNo AS StaffNo,
+        s.Name AS Name,
+        s.Department AS Department,
+        COALESCE(a.Position, 'N/A') AS Position,
+        COALESCE(a.TrDate, CAST(@startDate AS DATE)) AS Date,
         s.ScheduledClockIn,
         s.ScheduledClockOut,
         s.ScheduleType,
@@ -70,13 +85,12 @@ const getEnhancedAttendanceData = async (filters) => {
           WHEN DATEPART(HOUR, a.ActualClockOut) = DATEPART(HOUR, s.ScheduledClockOut) 
             AND DATEPART(MINUTE, a.ActualClockOut) >= DATEPART(MINUTE, s.ScheduledClockOut) - ${toleranceMinutes} THEN 'OnTime'
           -- Out of Range: More than 2 hours early (severe violation)
-          WHEN DATEDIFF(MINUTE, a.ActualClockOut, 
-               CAST(a.TrDate + ' ' + CAST(s.ScheduledClockOut AS VARCHAR(8)) AS DATETIME)) > 120 THEN 'Out of Range'
+          WHEN a.ActualClockOut IS NOT NULL AND DATEDIFF(MINUTE, a.ActualClockOut, s.ScheduledClockOut) > 120 THEN 'Out of Range'
           -- Early: Within 2 hours but outside tolerance
           ELSE 'Early'
         END AS ClockOutStatus
       FROM ScheduleData s
-      JOIN AttendanceData a ON s.StaffNo = a.StaffNo
+      LEFT JOIN AttendanceData a ON s.StaffNo = a.StaffNo AND a.TrDate BETWEEN @startDate AND @endDate
       ${whereClause}
     )
     SELECT * FROM FilteredData
@@ -103,10 +117,13 @@ const getEnhancedAttendanceData = async (filters) => {
   // Execute the data query
   const dataResult = await request.query(dataQuery);
   
-  console.log('Service returned data sample:', JSON.stringify(dataResult.recordset.slice(0, 2), null, 2));
+  // Format the time fields before returning
+  const formattedData = formatAttendanceData(dataResult.recordset);
+  
+  console.log('Service returned data sample:', JSON.stringify(formattedData.slice(0, 2), null, 2));
   
   return {
-    data: dataResult.recordset,
+    data: formattedData,
     total,
     page: parseInt(page),
     pageSize: parseInt(pageSize),
@@ -130,11 +147,11 @@ const getEnhancedAttendanceForExport = async (filters) => {
     ,
     FilteredData AS (
       SELECT 
-        s.StaffNo,
-        s.Name,
-        s.Department,
-        a.Position,
-        a.TrDate AS Date,
+        s.StaffNo AS StaffNo,
+        s.Name AS Name,
+        s.Department AS Department,
+        COALESCE(a.Position, 'N/A') AS Position,
+        COALESCE(a.TrDate, CAST(@startDate AS DATE)) AS Date,
         s.ScheduledClockIn,
         s.ScheduledClockOut,
         s.ScheduleType,
@@ -157,13 +174,12 @@ const getEnhancedAttendanceForExport = async (filters) => {
           WHEN DATEPART(HOUR, a.ActualClockOut) = DATEPART(HOUR, s.ScheduledClockOut) 
             AND DATEPART(MINUTE, a.ActualClockOut) >= DATEPART(MINUTE, s.ScheduledClockOut) - ${toleranceMinutes} THEN 'OnTime'
           -- Out of Range: More than 2 hours early (severe violation)
-          WHEN DATEDIFF(MINUTE, a.ActualClockOut, 
-               CAST(a.TrDate + ' ' + CAST(s.ScheduledClockOut AS VARCHAR(8)) AS DATETIME)) > 120 THEN 'Out of Range'
+          WHEN a.ActualClockOut IS NOT NULL AND DATEDIFF(MINUTE, a.ActualClockOut, s.ScheduledClockOut) > 120 THEN 'Out of Range'
           -- Early: Within 2 hours but outside tolerance
           ELSE 'Early'
         END AS ClockOutStatus
       FROM ScheduleData s
-      JOIN AttendanceData a ON s.StaffNo = a.StaffNo
+      LEFT JOIN AttendanceData a ON s.StaffNo = a.StaffNo AND a.TrDate BETWEEN @startDate AND @endDate
       ${whereClause}
     )
     SELECT * FROM FilteredData
@@ -177,9 +193,13 @@ const getEnhancedAttendanceForExport = async (filters) => {
   
   console.log('Executing export query...');
   const dataResult = await request.query(dataQuery);
-  console.log('Export service raw result sample:', JSON.stringify(dataResult.recordset.slice(0, 2), null, 2));
   
-  return dataResult.recordset;
+  // Format the time fields before returning
+  const formattedData = formatAttendanceData(dataResult.recordset);
+  
+  console.log('Export service raw result sample:', JSON.stringify(formattedData.slice(0, 2), null, 2));
+  
+  return formattedData;
 };
 
 module.exports = {

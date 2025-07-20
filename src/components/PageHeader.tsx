@@ -38,9 +38,10 @@ interface PageHeaderProps {
   title: string;
   subtitle: string;
   currentPage: 'dashboard' | 'schedule' | 'enhanced-attendance';
+  action?: React.ReactNode;
 }
 
-const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, currentPage }) => {
+const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, currentPage, action }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const location = useLocation();
@@ -177,7 +178,12 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, currentPage })
               {subtitle}
             </Typography>
           </Box>
-          <Box display="flex" gap={1} flexWrap="wrap">
+          <Box display="flex" gap={1} flexWrap="wrap" alignItems="center">
+            {action && (
+              <Box sx={{ mr: 1 }}>
+                {action}
+              </Box>
+            )}
             {navigationItems
               .filter(item => item.key !== currentPage)
               .map((item) => {

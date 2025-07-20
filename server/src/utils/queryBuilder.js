@@ -56,11 +56,10 @@ const buildFilterConditions = (filters, toleranceMinutes = 15) => {
     if (clockOutStatus === 'Missing') {
       filterConditions.push(`a.ActualClockOut IS NULL`);
     } else if (clockOutStatus === 'Out of Range') {
-      filterConditions.push(`(a.ActualClockOut IS NOT NULL AND DATEDIFF(MINUTE, a.ActualClockOut, 
-        CAST(a.TrDate + ' ' + CAST(s.ScheduledClockOut AS VARCHAR(8)) AS DATETIME)) > 120)`);
+      filterConditions.push(`(a.ActualClockOut IS NOT NULL AND DATEDIFF(MINUTE, a.ActualClockOut, s.ScheduledClockOut) > 120)`);
     } else if (clockOutStatus === 'Early') {
       filterConditions.push(`(a.ActualClockOut IS NOT NULL AND 
-        DATEDIFF(MINUTE, a.ActualClockOut, CAST(a.TrDate + ' ' + CAST(s.ScheduledClockOut AS VARCHAR(8)) AS DATETIME)) <= 120 AND
+        DATEDIFF(MINUTE, a.ActualClockOut, s.ScheduledClockOut) <= 120 AND
         (DATEPART(HOUR, a.ActualClockOut) < DATEPART(HOUR, s.ScheduledClockOut) 
         OR (DATEPART(HOUR, a.ActualClockOut) = DATEPART(HOUR, s.ScheduledClockOut) 
         AND DATEPART(MINUTE, a.ActualClockOut) < DATEPART(MINUTE, s.ScheduledClockOut) - ${toleranceMinutes})))`);
@@ -89,28 +88,28 @@ const buildBaseCTEQueries = (toleranceMinutes = 15) => {
   return `
     WITH ScheduleData AS (
       SELECT 
-        s.StaffNo,
-        s.Name,
-        s.Department,
-        s.TimeIn AS ScheduledClockIn,
-        s.TimeOut AS ScheduledClockOut,
+        s.StaffNo AS StaffNo,
+        s.Name AS Name,
+        s.Department AS Department,
+        s.time_in AS ScheduledClockIn,
+        s.time_out AS ScheduledClockOut,
         CASE 
           -- Fixed/Normal Schedule: 07:00-17:00
-          WHEN s.TimeIn = '07:00:00' AND s.TimeOut = '17:00:00' THEN 'Fixed'
+          WHEN CONVERT(VARCHAR, s.time_in, 108) = '07:00:00' AND CONVERT(VARCHAR, s.time_out, 108) = '17:00:00' THEN 'Fixed'
           
           -- Two-Shift Schedule
-          WHEN s.TimeIn = '07:00:00' AND s.TimeOut = '19:00:00' THEN 'TwoShift_Day'
-          WHEN s.TimeIn = '19:00:00' AND s.TimeOut = '07:00:00' THEN 'TwoShift_Night'
+          WHEN CONVERT(VARCHAR, s.time_in, 108) = '07:00:00' AND CONVERT(VARCHAR, s.time_out, 108) = '19:00:00' THEN 'TwoShift_Day'
+          WHEN CONVERT(VARCHAR, s.time_in, 108) = '19:00:00' AND CONVERT(VARCHAR, s.time_out, 108) = '07:00:00' THEN 'TwoShift_Night'
           
           -- Three-Shift Schedule
-          WHEN s.TimeIn = '07:00:00' AND s.TimeOut = '15:00:00' THEN 'ThreeShift_Morning'
-          WHEN s.TimeIn = '15:00:00' AND s.TimeOut = '23:00:00' THEN 'ThreeShift_Afternoon'
-          WHEN s.TimeIn = '23:00:00' AND s.TimeOut = '07:00:00' THEN 'ThreeShift_Night'
+          WHEN CONVERT(VARCHAR, s.time_in, 108) = '07:00:00' AND CONVERT(VARCHAR, s.time_out, 108) = '15:00:00' THEN 'ThreeShift_Morning'
+          WHEN CONVERT(VARCHAR, s.time_in, 108) = '15:00:00' AND CONVERT(VARCHAR, s.time_out, 108) = '23:00:00' THEN 'ThreeShift_Afternoon'
+          WHEN CONVERT(VARCHAR, s.time_in, 108) = '23:00:00' AND CONVERT(VARCHAR, s.time_out, 108) = '07:00:00' THEN 'ThreeShift_Night'
           
           ELSE 'Unknown'
         END AS ScheduleType
-      FROM CardDBTimeSchedule s
-      WHERE s.StaffNo IS NOT NULL AND s.StaffNo <> '' AND s.StaffNo LIKE '%MTI%'
+      FROM MTIUsers s
+      WHERE s.StaffNo IS NOT NULL AND s.StaffNo <> ''
     ),
     AttendanceData AS (
       SELECT 
@@ -125,12 +124,8 @@ const buildBaseCTEQueries = (toleranceMinutes = 15) => {
            WHERE ar.StaffNo = a.StaffNo 
              AND ar.TrDate = a.TrDate 
              AND ar.ClockEvent = 'Outside Range'
-             AND ABS(DATEDIFF(MINUTE, 
-                 CAST(a.TrDate + ' ' + CAST(sd.ScheduledClockIn AS VARCHAR(8)) AS DATETIME), 
-                 ar.TrDateTime)) <= 180  -- Within 3 hours (180 minutes)
-           ORDER BY ABS(DATEDIFF(MINUTE, 
-               CAST(a.TrDate + ' ' + CAST(sd.ScheduledClockIn AS VARCHAR(8)) AS DATETIME), 
-               ar.TrDateTime)) ASC)
+             AND ABS(DATEDIFF(MINUTE, sd.ScheduledClockIn, ar.TrDateTime)) <= 180  -- Within 3 hours (180 minutes)
+           ORDER BY ABS(DATEDIFF(MINUTE, sd.ScheduledClockIn, ar.TrDateTime)) ASC)
         ) AS ActualClockIn,
         -- First try to get normal Clock Out, if NULL then try Outside Range within 3 hours
         COALESCE(
@@ -141,12 +136,8 @@ const buildBaseCTEQueries = (toleranceMinutes = 15) => {
            WHERE ar.StaffNo = a.StaffNo 
              AND ar.TrDate = a.TrDate 
              AND ar.ClockEvent = 'Outside Range'
-             AND ABS(DATEDIFF(MINUTE, 
-                 CAST(a.TrDate + ' ' + CAST(sd.ScheduledClockOut AS VARCHAR(8)) AS DATETIME), 
-                 ar.TrDateTime)) <= 180  -- Within 3 hours (180 minutes)
-           ORDER BY ABS(DATEDIFF(MINUTE, 
-               CAST(a.TrDate + ' ' + CAST(sd.ScheduledClockOut AS VARCHAR(8)) AS DATETIME), 
-               ar.TrDateTime)) ASC)
+             AND ABS(DATEDIFF(MINUTE, sd.ScheduledClockOut, ar.TrDateTime)) <= 180  -- Within 3 hours (180 minutes)
+           ORDER BY ABS(DATEDIFF(MINUTE, sd.ScheduledClockOut, ar.TrDateTime)) ASC)
         ) AS ActualClockOut,
         MIN(CASE WHEN a.ClockEvent = 'Clock In' THEN a.TrController END) AS ClockInController,
         MAX(CASE WHEN a.ClockEvent = 'Clock Out' THEN a.TrController END) AS ClockOutController,
