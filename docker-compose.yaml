@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: server/Dockerfile
+      args:
+        GIT_BRANCH: UI-Modification--Use-Material-UI
     image: attend-backend:latest
     env_file:
       - server/.env
@@ -14,12 +16,11 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
       args:
+        GIT_BRANCH: UI-Modification--Use-Material-UI
         VITE_API_BASE_URL: ${VITE_API_BASE_URL}
         VITE_USE_RELATIVE_API_URL: ${VITE_USE_RELATIVE_API_URL}
     image: attend-frontend:latest
     ports:
-      - "9000:80"      # or whichever free host port you chose
+      - "9000:80"
     depends_on:
       - backend
-
-# No `networks:` section at all
