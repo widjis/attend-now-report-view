@@ -5,11 +5,26 @@ const { formatDataForExport } = require('../utils/dateTimeFormatter');
 // Export data to XLSX format
 const exportToXlsx = async (data, res, startDate, endDate) => {
   try {
-    console.log('XLSX Export - raw data sample:', JSON.stringify(data.slice(0, 2), null, 2));
+    console.log('XLSX Export - starting export process');
     
     // Validate input data
     if (!Array.isArray(data)) {
       throw new Error('Invalid data format: expected array');
+    }
+    
+    // Log data sample for debugging
+    if (data.length > 0) {
+      console.log('XLSX Export - raw data sample:', JSON.stringify(data.slice(0, 2), null, 2));
+    } else {
+      console.log('XLSX Export - no data to export');
+    }
+    
+    // Validate date parameters
+    if (!startDate || !endDate) {
+      console.warn('Missing date parameters for export', { startDate, endDate });
+      // Use default dates if missing
+      startDate = startDate || new Date().toISOString().split('T')[0];
+      endDate = endDate || new Date().toISOString().split('T')[0];
     }
     
     if (data.length === 0) {
@@ -58,26 +73,43 @@ const exportToXlsx = async (data, res, startDate, endDate) => {
       'Clock Out Status'
     ];
     
-    // Map data to match headers with null safety
-    const worksheetData = [
-      headers,
-      ...formattedData.map(row => [
-        row.StaffNo || '',
-        row.Name || '',
-        row.Department || '',
-        row.Position || '',
-        row.Date || '',
-        row.ScheduledClockIn || '',
-        row.ScheduledClockOut || '',
-        row.ScheduleType || '',
-        row.ActualClockIn || '',
-        row.ActualClockOut || '',
-        row.ClockInController || '',
-        row.ClockOutController || '',
-        row.ClockInStatus || '',
-        row.ClockOutStatus || ''
-      ])
-    ];
+    // Map data to match headers with null safety and error handling
+    const worksheetData = [headers];
+    
+    // Process each row with error handling
+    formattedData.forEach((row, index) => {
+      try {
+        // Validate row is an object
+        if (!row || typeof row !== 'object') {
+          console.warn(`Skipping invalid row at index ${index}:`, row);
+          return;
+        }
+        
+        // Create a sanitized row with fallbacks for all fields
+        const sanitizedRow = [
+          row.StaffNo || '',
+          row.Name || '',
+          row.Department || '',
+          row.Position || '',
+          row.Date || '',
+          row.ScheduledClockIn || '',
+          row.ScheduledClockOut || '',
+          row.ScheduleType || '',
+          row.ActualClockIn || '',
+          row.ActualClockOut || '',
+          row.ClockInController || '',
+          row.ClockOutController || '',
+          row.ClockInStatus || '',
+          row.ClockOutStatus || ''
+        ];
+        
+        worksheetData.push(sanitizedRow);
+      } catch (err) {
+        console.error(`Error processing row ${index} for Excel export:`, err.message);
+        // Add an empty row with a note about the error
+        worksheetData.push(['Error processing data', '', '', '', '', '', '', '', '', '', '', '', '', '']);
+      }
+    });
     
     // Create workbook and worksheet
     const workbook = XLSX.utils.book_new();
@@ -182,7 +214,32 @@ const exportToXlsx = async (data, res, startDate, endDate) => {
     console.log(`XLSX export completed: ${filename} (${formattedData.length} records)`);
   } catch (error) {
     console.error('Error in XLSX export:', error);
-    throw error;
+    
+    // Provide more detailed error information
+    let errorMessage = 'Error generating Excel export';
+    
+    if (error.message.includes('Invalid data format')) {
+      errorMessage = 'Invalid data format for Excel export';
+    } else if (error.message.includes('Date')) {
+      errorMessage = 'Error processing dates in Excel export';
+    } else if (error.message.includes('toISOString')) {
+      errorMessage = 'Invalid date value encountered during Excel export';
+    } else if (error instanceof TypeError) {
+      errorMessage = `Type error during Excel export: ${error.message}`;
+    }
+    
+    // Add stack trace for debugging
+    console.error('Excel export error details:', {
+      message: errorMessage,
+      originalError: error.message,
+      stack: error.stack
+    });
+    
+    // Throw a more informative error
+    const enhancedError = new Error(errorMessage);
+    enhancedError.originalError = error;
+    enhancedError.cause = error;
+    throw enhancedError;
   }
 };
 

@@ -5,16 +5,71 @@ const { formatTime } = require('../utils/dateTimeFormatter');
 
 // Helper function to format time fields in attendance data
 const formatAttendanceData = (data) => {
-  return data.map(row => ({
-    ...row,
-    Date: row.Date ? new Date(row.Date).toISOString().split('T')[0] : '',
-    // Format scheduled times to HH:MM to match frontend display
-    ScheduledClockIn: row.ScheduledClockIn ? formatTime(new Date(row.ScheduledClockIn)) : '',
-    ScheduledClockOut: row.ScheduledClockOut ? formatTime(new Date(row.ScheduledClockOut)) : '',
-    // Format actual times to HH:MM to match frontend display
-    ActualClockIn: row.ActualClockIn ? formatTime(new Date(row.ActualClockIn)) : '',
-    ActualClockOut: row.ActualClockOut ? formatTime(new Date(row.ActualClockOut)) : ''
-  }));
+  if (!Array.isArray(data)) {
+    console.error('formatAttendanceData received non-array data:', typeof data);
+    return [];
+  }
+  
+  return data.map((row, index) => {
+    try {
+      // Helper function to safely create a date or handle time strings
+      const safeDate = (value, fieldName) => {
+        if (!value) return null;
+        
+        // If it's already a time string in HH:MM format, return it directly
+        if (typeof value === 'string' && /^\d{1,2}:\d{2}$/.test(value)) {
+          return value;
+        }
+        
+        try {
+          const date = new Date(value);
+          if (isNaN(date.getTime())) {
+            console.warn(`Invalid date in row ${index} for ${fieldName}:`, value);
+            return null;
+          }
+          return date;
+        } catch (err) {
+          console.error(`Error creating date for ${fieldName}:`, err.message);
+          return null;
+        }
+      };
+      
+      // Format Date field
+      let formattedDate = '';
+      if (row.Date) {
+        const dateObj = safeDate(row.Date, 'Date');
+        if (dateObj) {
+          try {
+            formattedDate = dateObj.toISOString().split('T')[0];
+          } catch (err) {
+            console.error(`Error formatting Date in row ${index}:`, err.message);
+          }
+        }
+      }
+      
+      return {
+        ...row,
+        Date: formattedDate,
+        // Format scheduled times to HH:MM to match frontend display
+        ScheduledClockIn: row.ScheduledClockIn ? formatTime(safeDate(row.ScheduledClockIn, 'ScheduledClockIn')) : '',
+        ScheduledClockOut: row.ScheduledClockOut ? formatTime(safeDate(row.ScheduledClockOut, 'ScheduledClockOut')) : '',
+        // Format actual times to HH:MM to match frontend display
+        ActualClockIn: row.ActualClockIn ? formatTime(safeDate(row.ActualClockIn, 'ActualClockIn')) : '',
+        ActualClockOut: row.ActualClockOut ? formatTime(safeDate(row.ActualClockOut, 'ActualClockOut')) : ''
+      };
+    } catch (err) {
+      console.error(`Error formatting row ${index}:`, err.message);
+      // Return a sanitized version of the row with empty strings for date fields
+      return {
+        ...row,
+        Date: '',
+        ScheduledClockIn: '',
+        ScheduledClockOut: '',
+        ActualClockIn: '',
+        ActualClockOut: ''
+      };
+    }
+  });
 };
 
 // Get enhanced attendance data with filters and pagination

@@ -6,6 +6,7 @@ const attendanceRoutes = require('./routes/attendance');
 const scheduleRoutes = require('./routes/schedule');
 const filtersRoutes = require('./routes/filters');
 const enhancedAttendanceRoutes = require('./routes/enhancedAttendance');
+const authRoutes = require('./routes/authRoutes');
 const { poolPromise } = require('./config/db');
 
 const app = express();
@@ -20,6 +21,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/schedule', scheduleRoutes);
 app.use('/api/filters', filtersRoutes);
 app.use('/api/enhanced-attendance', enhancedAttendanceRoutes);
+app.use('/api/auth', authRoutes);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {

@@ -4,19 +4,31 @@ const { formatDataForExport } = require('../utils/dateTimeFormatter');
 
 // Export enhanced attendance data to PDF
 const exportToPdf = async (data, res, startDate, endDate) => {
-  // Format the data before exporting
-  const formattedData = formatDataForExport(data);
-  
-  // Create PDF
-  const doc = new PDFDocument({ margin: 30, size: 'A4' });
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename="enhanced-attendance-${startDate}-to-${endDate}.pdf"`);
-  doc.pipe(res);
+  try {
+    console.log('PDF Export - starting export process');
+    
+    // Validate input data
+    if (!Array.isArray(data)) {
+      throw new Error('Invalid data format: expected array');
+    }
+    
+    // Use default dates if not provided
+    const exportStartDate = startDate || new Date().toISOString().split('T')[0];
+    const exportEndDate = endDate || new Date().toISOString().split('T')[0];
+    
+    // Format the data before exporting
+    const formattedData = formatDataForExport(data);
+    
+    // Create PDF
+    const doc = new PDFDocument({ margin: 30, size: 'A4' });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="enhanced-attendance-${exportStartDate}-to-${exportEndDate}.pdf"`);
+    doc.pipe(res);
 
-  // Title
-  doc.fontSize(16).text('Enhanced Attendance Report', { align: 'center' });
-  doc.fontSize(12).text(`Period: ${startDate} to ${endDate}`, { align: 'center' });
-  doc.moveDown();
+    // Title
+    doc.fontSize(16).text('Enhanced Attendance Report', { align: 'center' });
+    doc.fontSize(12).text(`Period: ${exportStartDate} to ${exportEndDate}`, { align: 'center' });
+    doc.moveDown();
 
   // Table headers
   const startX = 30;
@@ -64,6 +76,26 @@ const exportToPdf = async (data, res, startDate, endDate) => {
   }
 
   doc.end();
+  console.log(`PDF Export - completed successfully with ${formattedData.length} records (showing first 50 max)`);
+  } catch (error) {
+    console.error('PDF Export - Error during export:', error);
+    
+    // Provide specific error messages based on error type
+    if (error instanceof TypeError) {
+      console.error('PDF Export - Type error, likely invalid data format:', error.message);
+    }
+    
+    // Log stack trace for debugging
+    console.error('PDF Export - Error stack:', error.stack);
+    
+    // If headers haven't been sent yet, send error response
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to generate PDF export', message: error.message });
+    } else {
+      // If headers already sent, end the response
+      res.end();
+    }
+  }
 };
 
 module.exports = {

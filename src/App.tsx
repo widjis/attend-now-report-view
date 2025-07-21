@@ -14,6 +14,7 @@ import Schedule from "./pages/Schedule";
 import EnhancedAttendance from "./pages/EnhancedAttendance";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
+import AuthTest from "./pages/AuthTest";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +76,16 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute requireAuth={true} requiredRole="user">
               <Index />
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* Auth Test Page */}
+        <Route 
+          path="/auth-test" 
+          element={
+            <ProtectedRoute>
+              <AuthTest />
             </ProtectedRoute>
           } 
         />

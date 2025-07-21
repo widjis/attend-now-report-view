@@ -65,10 +65,9 @@ exports.exportEnhancedAttendanceToCsv = async (req, res, next) => {
       clockOutStatus
     } = req.query;
 
-    if (!startDate || !endDate) {
-      return res.status(400).json({ error: 'Start date and end date are required' });
-    }
-
+    // Validate date parameters but allow them to be optional
+    // The exportToCsv function will handle missing dates with defaults
+    
     const filters = {
       startDate,
       endDate,
@@ -80,13 +79,37 @@ exports.exportEnhancedAttendanceToCsv = async (req, res, next) => {
     };
 
     console.log('CSV Export filters:', filters);
-    const data = await getEnhancedAttendanceForExport(filters);
-    console.log('CSV Export raw data sample:', JSON.stringify(data.slice(0, 2), null, 2));
     
-    await exportToCsv(data, res, startDate, endDate);
+    try {
+      const data = await getEnhancedAttendanceForExport(filters);
+      
+      if (!data || !Array.isArray(data)) {
+        console.error('CSV Export - Invalid data returned from service:', typeof data);
+        return res.status(500).json({ error: 'Failed to retrieve data for export' });
+      }
+      
+      console.log(`CSV Export - Retrieved ${data.length} records for export`);
+      if (data.length > 0) {
+        console.log('CSV Export raw data sample:', JSON.stringify(data.slice(0, 2), null, 2));
+      } else {
+        console.log('CSV Export - No data found matching the filters');
+      }
+      
+      await exportToCsv(data, res, startDate, endDate);
+    } catch (dataErr) {
+      console.error('CSV Export - Error retrieving or processing data:', dataErr);
+      if (!res.headersSent) {
+        res.status(500).json({ 
+          error: 'Failed to generate CSV export', 
+          message: dataErr.message || 'Error retrieving data for export'
+        });
+      }
+    }
   } catch (err) {
     console.error('Error exporting enhanced attendance to CSV:', err);
-    res.status(500).json({ error: 'Internal Server Error', message: err.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal Server Error', message: err.message });
+    }
   }
 };
 
@@ -105,10 +128,9 @@ exports.exportEnhancedAttendanceToPdf = async (req, res, next) => {
       clockOutStatus
     } = req.query;
 
-    if (!startDate || !endDate) {
-      return res.status(400).json({ error: 'Start date and end date are required' });
-    }
-
+    // Validate date parameters but allow them to be optional
+    // The exportToPdf function will handle missing dates with defaults
+    
     const filters = {
       startDate,
       endDate,
@@ -120,11 +142,37 @@ exports.exportEnhancedAttendanceToPdf = async (req, res, next) => {
     };
 
     console.log('PDF Export filters:', filters);
-    const data = await getEnhancedAttendanceForExport(filters);
-    await exportToPdf(data, res, startDate, endDate);
+    
+    try {
+      const data = await getEnhancedAttendanceForExport(filters);
+      
+      if (!data || !Array.isArray(data)) {
+        console.error('PDF Export - Invalid data returned from service:', typeof data);
+        return res.status(500).json({ error: 'Failed to retrieve data for export' });
+      }
+      
+      console.log(`PDF Export - Retrieved ${data.length} records for export`);
+      if (data.length > 0) {
+        console.log('PDF Export raw data sample:', JSON.stringify(data.slice(0, 2), null, 2));
+      } else {
+        console.log('PDF Export - No data found matching the filters');
+      }
+      
+      await exportToPdf(data, res, startDate, endDate);
+    } catch (dataErr) {
+      console.error('PDF Export - Error retrieving or processing data:', dataErr);
+      if (!res.headersSent) {
+        res.status(500).json({ 
+          error: 'Failed to generate PDF export', 
+          message: dataErr.message || 'Error retrieving data for export'
+        });
+      }
+    }
   } catch (err) {
     console.error('Error exporting enhanced attendance to PDF:', err);
-    res.status(500).json({ error: 'Internal Server Error', message: err.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal Server Error', message: err.message });
+    }
   }
 };
 

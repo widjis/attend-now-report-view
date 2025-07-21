@@ -7,6 +7,15 @@ import {
   UserRole, 
   DEFAULT_PERMISSIONS 
 } from '@/types/auth';
+import axios from 'axios';
+
+// API configuration
+const API_URL = 'http://localhost:5001/api';
+const AUTH_ENDPOINTS = {
+  LOGIN: `${API_URL}/auth/login`,
+  CHECK: `${API_URL}/auth/check`,
+  ME: `${API_URL}/auth/me`,
+};
 
 // Initial state
 const initialState: AuthState = {
@@ -95,25 +104,60 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// Setup axios interceptor for authentication
+const setupAxiosInterceptors = (token: string) => {
+  axios.interceptors.request.use(
+    (config) => {
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
   // Initialize auth state on app load
   useEffect(() => {
-    const initializeAuth = () => {
+    const initializeAuth = async () => {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      
       try {
-        const savedUser = localStorage.getItem('auth_user');
         const savedToken = localStorage.getItem('auth_token');
         
-        if (savedUser && savedToken) {
-          const user = JSON.parse(savedUser);
-          dispatch({ type: 'LOGIN_SUCCESS', payload: user });
+        if (savedToken) {
+          // Setup axios with the saved token
+          setupAxiosInterceptors(savedToken);
+          
+          // Verify token validity with the server
+          const response = await axios.get(AUTH_ENDPOINTS.CHECK);
+          
+          if (response.data.success) {
+            // Map the API response to our User type
+            const userData: User = {
+              id: response.data.user.id,
+              username: response.data.user.username,
+              role: response.data.user.role as UserRole,
+              // For now, use default permissions based on role
+              permissions: DEFAULT_PERMISSIONS[response.data.user.role as UserRole] || [],
+            };
+            
+            dispatch({ type: 'LOGIN_SUCCESS', payload: userData });
+          } else {
+            // Token invalid, switch to guest
+            localStorage.removeItem('auth_token');
+            dispatch({ type: 'SWITCH_TO_GUEST' });
+          }
         } else {
-          // Default to guest mode if no saved auth
+          // No token, switch to guest
           dispatch({ type: 'SWITCH_TO_GUEST' });
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
+        localStorage.removeItem('auth_token');
         dispatch({ type: 'SWITCH_TO_GUEST' });
       }
     };
@@ -121,31 +165,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initializeAuth();
   }, []);
 
-  // Login function (will be connected to backend later)
+  // Login function connected to the backend API
   const login = async (credentials: LoginCredentials): Promise<void> => {
     dispatch({ type: 'LOGIN_START' });
     
     try {
-      // TODO: Replace with actual API call when backend is ready
-      // For now, simulate login with mock data
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
+      // Call the login API
+      const response = await axios.post(AUTH_ENDPOINTS.LOGIN, credentials);
       
-      // Mock user data - replace with actual API response
-      const mockUser: User = {
-        id: '1',
-        username: credentials.username,
-        email: `${credentials.username}@company.com`,
-        role: 'user',
-        permissions: DEFAULT_PERMISSIONS.user,
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-      };
-
-      // Save to localStorage
-      localStorage.setItem('auth_user', JSON.stringify(mockUser));
-      localStorage.setItem('auth_token', 'mock_jwt_token');
-      
-      dispatch({ type: 'LOGIN_SUCCESS', payload: mockUser });
+      if (response.data.success) {
+        const { token, user } = response.data;
+        
+        // Save token to localStorage
+        localStorage.setItem('auth_token', token);
+        
+        // Setup axios interceptor with the new token
+        setupAxiosInterceptors(token);
+        
+        // Map the API response to our User type
+        const userData: User = {
+          id: user.id,
+          username: user.username,
+          role: user.role as UserRole,
+          // For now, use default permissions based on role
+          permissions: DEFAULT_PERMISSIONS[user.role as UserRole] || [],
+        };
+        
+        dispatch({ type: 'LOGIN_SUCCESS', payload: userData });
+      } else {
+        dispatch({ type: 'LOGIN_FAILURE', payload: response.data.message || 'Login failed' });
+        throw new Error(response.data.message || 'Login failed');
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
       dispatch({ type: 'LOGIN_FAILURE', payload: errorMessage });
@@ -155,14 +205,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Logout function
   const logout = (): void => {
-    localStorage.removeItem('auth_user');
     localStorage.removeItem('auth_token');
     dispatch({ type: 'LOGOUT' });
   };
 
   // Switch to guest mode
   const switchToGuest = (): void => {
-    localStorage.removeItem('auth_user');
     localStorage.removeItem('auth_token');
     dispatch({ type: 'SWITCH_TO_GUEST' });
   };
