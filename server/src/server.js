@@ -10,6 +10,7 @@ const enhancedAttendanceRoutes = require('./routes/enhancedAttendance');
 const authRoutes = require('./routes/authRoutes');
 const usersRoutes = require('./routes/users');
 const debugRoutes = require('./routes/debug');
+const reportRoutes = require('./routes/reports');
 const { poolPromise } = require('./config/db');
 
 const app = express();
@@ -27,6 +28,7 @@ app.use('/api/enhanced-attendance', enhancedAttendanceRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/debug', debugRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
