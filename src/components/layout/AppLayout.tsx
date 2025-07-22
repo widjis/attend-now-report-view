@@ -93,6 +93,12 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       path: '/attendance-report',
       permission: 'attendance-report:read',
     },
+    {
+      text: 'Settings',
+      icon: <PersonIcon />,
+      path: '/settings',
+      permission: 'settings:read',
+    },
   ];
 
   const filteredMenuItems = menuItems.filter(item => {

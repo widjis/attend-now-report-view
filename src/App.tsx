@@ -12,6 +12,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Schedule from "./pages/Schedule";
 import EnhancedAttendance from "./pages/EnhancedAttendance";
+import Settings from "./pages/settings";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 import AuthTest from "./pages/AuthTest";
@@ -76,6 +77,16 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute requireAuth={true} requiredRole="user">
               <Index />
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* Admin only routes */}
+        <Route 
+          path="/settings" 
+          element={
+            <ProtectedRoute requireAuth={true} requiredRole="admin">
+              <Settings />
             </ProtectedRoute>
           } 
         />
