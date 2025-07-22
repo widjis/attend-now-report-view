@@ -18,8 +18,10 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { MTIUser } from "../types/schedule";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TimeScheduleTableProps {
   data: MTIUser[];
@@ -38,6 +40,7 @@ const TimeScheduleTable: React.FC<TimeScheduleTableProps> = ({
   onPageChange,
   className,
 }) => {
+  const isMobile = useIsMobile();
   const [sortColumn, setSortColumn] = useState<keyof MTIUser | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
@@ -71,6 +74,50 @@ const TimeScheduleTable: React.FC<TimeScheduleTableProps> = ({
 
   // Display skeleton loader while loading
   if (isLoading) {
+    if (isMobile) {
+      // Mobile skeleton loader with cards
+      return (
+        <div className={className}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Card key={i} className="mb-4 bg-white shadow">
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  {/* Employee ID and Name */}
+                  <div className="flex justify-between">
+                    <div className="w-1/3 h-4 animate-pulse bg-gray-200 rounded"></div>
+                    <div className="w-1/2 h-4 animate-pulse bg-gray-200 rounded"></div>
+                  </div>
+                  
+                  {/* Department, Division, Section */}
+                  <div className="flex justify-between">
+                    <div className="w-1/4 h-4 animate-pulse bg-gray-200 rounded"></div>
+                    <div className="w-1/4 h-4 animate-pulse bg-gray-200 rounded"></div>
+                    <div className="w-1/4 h-4 animate-pulse bg-gray-200 rounded"></div>
+                  </div>
+                  
+                  {/* Day Type */}
+                  <div className="w-1/4 h-6 animate-pulse bg-gray-200 rounded"></div>
+                  
+                  {/* Time In and Time Out */}
+                  <div className="flex justify-between pt-2">
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Time In</div>
+                      <div className="w-16 h-4 animate-pulse bg-gray-200 rounded"></div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Time Out</div>
+                      <div className="w-16 h-4 animate-pulse bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      );
+    }
+    
+    // Desktop skeleton loader with table
     return (
       <div className={cn("rounded-md border", className)}>
         <Table>
@@ -105,7 +152,11 @@ const TimeScheduleTable: React.FC<TimeScheduleTableProps> = ({
   // Display empty state
   if (data.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 border rounded-md text-center">
+      <div className={cn(
+        "flex flex-col items-center justify-center p-8 rounded-md text-center",
+        isMobile ? "bg-white shadow" : "border",
+        className
+      )}>
         <h3 className="text-lg font-medium">No schedule records found</h3>
         <p className="text-sm text-gray-500 mt-2">
           Try adjusting your filters or search criteria
@@ -148,93 +199,66 @@ const TimeScheduleTable: React.FC<TimeScheduleTableProps> = ({
     return sortDirection === "asc" ? " ▲" : " ▼";
   };
 
-  return (
-    <div className={className}>
-      <div className="rounded-md border overflow-x-auto">
-        <Table className="w-full">
-          <TableHeader>
-            <TableRow>
-              <TableHead 
-                className="cursor-pointer" 
-                onClick={() => handleSort("employee_id")}
-              >
-                Employee ID {getSortIndicator("employee_id")}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer" 
-                onClick={() => handleSort("employee_name")}
-              >
-                Name {getSortIndicator("employee_name")}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer" 
-                onClick={() => handleSort("department")}
-              >
-                Department {getSortIndicator("department")}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer" 
-                onClick={() => handleSort("division")}
-              >
-                Division {getSortIndicator("division")}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer" 
-                onClick={() => handleSort("section")}
-              >
-                Section {getSortIndicator("section")}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer" 
-                onClick={() => handleSort("day_type")}
-              >
-                Day Type {getSortIndicator("day_type")}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer" 
-                onClick={() => handleSort("time_in")}
-              >
-                Time In {getSortIndicator("time_in")}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer" 
-                onClick={() => handleSort("time_out")}
-              >
-                Time Out {getSortIndicator("time_out")}
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedData.map((record, index) => (
-              <TableRow key={record.employee_id || index} className="hover:bg-gray-50">
-                <TableCell className="font-medium">
-                  {record.employee_id || record.StaffNo || "N/A"}
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col">
-                    <span className="font-medium">
-                      {record.employee_name || record.Name || "N/A"}
-                    </span>
-                    {record.position_title && (
-                      <span className="text-xs text-gray-500">
-                        {record.position_title}
-                      </span>
-                    )}
+  // Render mobile card view
+  const renderMobileCardView = () => {
+    return (
+      <div className={className}>
+        {sortedData.map((record, index) => (
+          <Card key={record.employee_id || index} className="mb-4 bg-white shadow">
+            <CardContent className="p-4">
+              {/* Employee ID and Name */}
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <div className="text-sm text-gray-500">Employee ID</div>
+                  <div className="font-medium">
+                    {record.employee_id || record.StaffNo || "N/A"}
                   </div>
-                </TableCell>
-                <TableCell>{record.department || "N/A"}</TableCell>
-                <TableCell>{record.division || "N/A"}</TableCell>
-                <TableCell>{record.section || "N/A"}</TableCell>
-                <TableCell>
-                  {record.day_type ? (
-                    <Badge variant={getDayTypeBadgeColor(record.day_type)}>
-                      {record.day_type}
-                    </Badge>
-                  ) : (
-                    "N/A"
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-gray-500">Name</div>
+                  <div className="font-medium">
+                    {record.employee_name || record.Name || "N/A"}
+                  </div>
+                  {record.position_title && (
+                    <div className="text-xs text-gray-500">
+                      {record.position_title}
+                    </div>
                   )}
-                </TableCell>
-                <TableCell className={!record.time_in ? "bg-[#FEF7CD]" : ""}>
+                </div>
+              </div>
+              
+              {/* Department, Division, Section */}
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                <div>
+                  <div className="text-xs text-gray-500">Department</div>
+                  <div className="text-sm truncate">{record.department || "N/A"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500">Division</div>
+                  <div className="text-sm truncate">{record.division || "N/A"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500">Section</div>
+                  <div className="text-sm truncate">{record.section || "N/A"}</div>
+                </div>
+              </div>
+              
+              {/* Day Type */}
+              <div className="mb-3">
+                <div className="text-xs text-gray-500 mb-1">Day Type</div>
+                {record.day_type ? (
+                  <Badge variant={getDayTypeBadgeColor(record.day_type)}>
+                    {record.day_type}
+                  </Badge>
+                ) : (
+                  "N/A"
+                )}
+              </div>
+              
+              {/* Time In and Time Out */}
+              <div className="flex justify-between pt-2 border-t">
+                <div className={cn(!record.time_in ? "bg-[#FEF7CD] p-2 rounded" : "")}>
+                  <div className="text-xs text-gray-500 mb-1">Time In</div>
                   <div className="flex flex-col">
                     <span>{formatClockTime(record.time_in)}</span>
                     {record.next_day && record.time_in && (
@@ -243,8 +267,9 @@ const TimeScheduleTable: React.FC<TimeScheduleTableProps> = ({
                       </Badge>
                     )}
                   </div>
-                </TableCell>
-                <TableCell className={!record.time_out ? "bg-[#FEF7CD]" : ""}>
+                </div>
+                <div className={cn(!record.time_out ? "bg-[#FEF7CD] p-2 rounded" : "")}>
+                  <div className="text-xs text-gray-500 mb-1">Time Out</div>
                   <div className="flex flex-col">
                     <span>{formatClockTime(record.time_out)}</span>
                     {record.next_day && record.time_out && (
@@ -253,42 +278,169 @@ const TimeScheduleTable: React.FC<TimeScheduleTableProps> = ({
                       </Badge>
                     )}
                   </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
+    );
+  };
+
+  // Render desktop table view
+  const renderDesktopTableView = () => {
+    return (
+      <div className={className}>
+        <div className="rounded-md border overflow-x-auto">
+          <Table className="w-full">
+            <TableHeader>
+              <TableRow>
+                <TableHead 
+                  className="cursor-pointer" 
+                  onClick={() => handleSort("employee_id")}
+                >
+                  Employee ID {getSortIndicator("employee_id")}
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer" 
+                  onClick={() => handleSort("employee_name")}
+                >
+                  Name {getSortIndicator("employee_name")}
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer" 
+                  onClick={() => handleSort("department")}
+                >
+                  Department {getSortIndicator("department")}
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer" 
+                  onClick={() => handleSort("division")}
+                >
+                  Division {getSortIndicator("division")}
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer" 
+                  onClick={() => handleSort("section")}
+                >
+                  Section {getSortIndicator("section")}
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer" 
+                  onClick={() => handleSort("day_type")}
+                >
+                  Day Type {getSortIndicator("day_type")}
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer" 
+                  onClick={() => handleSort("time_in")}
+                >
+                  Time In {getSortIndicator("time_in")}
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer" 
+                  onClick={() => handleSort("time_out")}
+                >
+                  Time Out {getSortIndicator("time_out")}
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedData.map((record, index) => (
+                <TableRow key={record.employee_id || index} className="hover:bg-gray-50">
+                  <TableCell className="font-medium">
+                    {record.employee_id || record.StaffNo || "N/A"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-medium">
+                        {record.employee_name || record.Name || "N/A"}
+                      </span>
+                      {record.position_title && (
+                        <span className="text-xs text-gray-500">
+                          {record.position_title}
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>{record.department || "N/A"}</TableCell>
+                  <TableCell>{record.division || "N/A"}</TableCell>
+                  <TableCell>{record.section || "N/A"}</TableCell>
+                  <TableCell>
+                    {record.day_type ? (
+                      <Badge variant={getDayTypeBadgeColor(record.day_type)}>
+                        {record.day_type}
+                      </Badge>
+                    ) : (
+                      "N/A"
+                    )}
+                  </TableCell>
+                  <TableCell className={!record.time_in ? "bg-[#FEF7CD]" : ""}>
+                    <div className="flex flex-col">
+                      <span>{formatClockTime(record.time_in)}</span>
+                      {record.next_day && record.time_in && (
+                        <Badge variant="outline" className="text-xs mt-1 w-fit">
+                          Next Day
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className={!record.time_out ? "bg-[#FEF7CD]" : ""}>
+                    <div className="flex flex-col">
+                      <span>{formatClockTime(record.time_out)}</span>
+                      {record.next_day && record.time_out && (
+                        <Badge variant="outline" className="text-xs mt-1 w-fit">
+                          Next Day
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      {isMobile ? renderMobileCardView() : renderDesktopTableView()}
 
       {totalPages > 1 && (
-        <Pagination className="mt-4">
-          <PaginationContent>
+        <Pagination className={cn("mt-4", isMobile && "pb-6")}>
+          <PaginationContent className={cn(isMobile && "flex-wrap justify-center")}>
             <PaginationItem>
               <PaginationPrevious
-                className={cn(currentPage === 1 && "pointer-events-none opacity-50")}
+                className={cn(
+                  currentPage === 1 && "pointer-events-none opacity-50",
+                  isMobile && "text-sm h-8 w-8 p-0"
+                )}
                 onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
               />
             </PaginationItem>
             
             {/* Adjust pagination rendering for different page sizes */}
-            {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+            {Array.from({ length: Math.min(isMobile ? 3 : 5, totalPages) }).map((_, i) => {
               let pageNumber: number;
               
-              if (totalPages <= 5) {
+              if (totalPages <= (isMobile ? 3 : 5)) {
                 pageNumber = i + 1;
-              } else if (currentPage <= 3) {
+              } else if (currentPage <= (isMobile ? 2 : 3)) {
                 pageNumber = i + 1;
-              } else if (currentPage >= totalPages - 2) {
-                pageNumber = totalPages - 4 + i;
+              } else if (currentPage >= totalPages - (isMobile ? 1 : 2)) {
+                pageNumber = totalPages - (isMobile ? 2 : 4) + i;
               } else {
-                pageNumber = currentPage - 2 + i;
+                pageNumber = currentPage - (isMobile ? 1 : 2) + i;
               }
               
               if (pageNumber === 1 || pageNumber === totalPages || 
-                (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)) {
+                (pageNumber >= currentPage - (isMobile ? 0 : 1) && pageNumber <= currentPage + (isMobile ? 0 : 1))) {
                 return (
                   <PaginationItem key={pageNumber}>
                     <PaginationLink
+                      className={cn(isMobile && "text-sm h-8 w-8 p-0")}
                       isActive={pageNumber === currentPage}
                       onClick={() => onPageChange(pageNumber)}
                     >
@@ -296,10 +448,10 @@ const TimeScheduleTable: React.FC<TimeScheduleTableProps> = ({
                     </PaginationLink>
                   </PaginationItem>
                 );
-              } else if (pageNumber === currentPage - 2 || pageNumber === currentPage + 2) {
+              } else if (pageNumber === currentPage - (isMobile ? 1 : 2) || pageNumber === currentPage + (isMobile ? 1 : 2)) {
                 return (
                   <PaginationItem key={`ellipsis-${pageNumber}`}>
-                    <PaginationEllipsis />
+                    <PaginationEllipsis className={cn(isMobile && "h-8 w-8")} />
                   </PaginationItem>
                 );
               }
@@ -308,14 +460,17 @@ const TimeScheduleTable: React.FC<TimeScheduleTableProps> = ({
             
             <PaginationItem>
               <PaginationNext
-                className={cn(currentPage === totalPages && "pointer-events-none opacity-50")}
+                className={cn(
+                  currentPage === totalPages && "pointer-events-none opacity-50",
+                  isMobile && "text-sm h-8 w-8 p-0"
+                )}
                 onClick={() => currentPage < totalPages && onPageChange(currentPage + 1)}
               />
             </PaginationItem>
           </PaginationContent>
         </Pagination>
       )}
-    </div>
+    </>
   );
 };
 

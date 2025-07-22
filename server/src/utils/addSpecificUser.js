@@ -1,7 +1,7 @@
 /**
  * Utility to create a specific user in the users table
  */
-require('dotenv').config({ path: '../../.env' });
+require('dotenv').config();
 const sql = require('mssql');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
@@ -42,7 +42,7 @@ async function addSpecificUser() {
     `;
     
     const userExistsResult = await pool.request()
-      .input('username', sql.NVarChar, 'widji.santoso@merdeka')
+      .input('username', sql.NVarChar, 'widji.santoso@merdekabattery.com')
       .query(userExistsQuery);
     
     const userExists = userExistsResult.recordset[0].user_exists > 0;
@@ -71,7 +71,7 @@ async function addSpecificUser() {
     
     await pool.request()
       .input('id', sql.NVarChar, userId)
-      .input('username', sql.NVarChar, 'widji.santoso@merdeka')
+      .input('username', sql.NVarChar, 'widji.santoso@merdekabattery.com')
       .input('password', sql.NVarChar, hashedPassword)
       .input('role', sql.NVarChar, 'user')
       .input('approved', sql.Bit, 1)
@@ -79,7 +79,7 @@ async function addSpecificUser() {
       .query(createUserQuery);
     
     console.log('✅ User created successfully');
-    console.log('Username: widji.santoso@merdeka');
+    console.log('Username: widji.santoso@merdekabattery.com');
     console.log('Password: P@ssw0rd.123');
     console.log('Role: user');
 

@@ -17,9 +17,11 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { EnhancedAttendanceRecord } from "@/types/enhancedAttendance";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface EnhancedAttendanceTableProps {
   data: EnhancedAttendanceRecord[];
@@ -38,8 +40,46 @@ const EnhancedAttendanceTable: React.FC<EnhancedAttendanceTableProps> = ({
   onPageChange,
   className,
 }) => {
+  const isMobile = useIsMobile();
   // Display skeleton loader while loading
   if (isLoading) {
+    if (isMobile) {
+      return (
+        <div className={className}>
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Card key={i} className="p-4 space-y-3">
+                <div className="flex justify-between items-start">
+                  <div className="h-6 w-1/2 animate-pulse bg-gray-200 rounded"></div>
+                  <div className="h-5 w-1/4 animate-pulse bg-gray-200 rounded"></div>
+                </div>
+                <div className="h-4 w-1/3 animate-pulse bg-gray-200 rounded"></div>
+                <div className="border-t my-2"></div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="h-4 w-full animate-pulse bg-gray-200 rounded mb-1"></div>
+                    <div className="h-5 w-2/3 animate-pulse bg-gray-200 rounded"></div>
+                  </div>
+                  <div>
+                    <div className="h-4 w-full animate-pulse bg-gray-200 rounded mb-1"></div>
+                    <div className="h-5 w-2/3 animate-pulse bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <div className="h-4 w-1/3 animate-pulse bg-gray-200 rounded mb-1"></div>
+                  <div className="h-5 w-1/2 animate-pulse bg-gray-200 rounded"></div>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <div className="h-6 w-1/4 animate-pulse bg-gray-200 rounded"></div>
+                  <div className="h-6 w-1/4 animate-pulse bg-gray-200 rounded"></div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <div className={cn("rounded-md border", className)}>
         <Table>
@@ -77,7 +117,11 @@ const EnhancedAttendanceTable: React.FC<EnhancedAttendanceTableProps> = ({
   // Display empty state
   if (data.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 border rounded-md text-center">
+      <div className={cn(
+        "flex flex-col items-center justify-center p-8 rounded-md text-center",
+        isMobile ? "bg-white shadow" : "border",
+        className
+      )}>
         <h3 className="text-lg font-medium">No attendance records found</h3>
         <p className="text-sm text-gray-500 mt-2">
           Try adjusting your date range or search criteria
@@ -149,6 +193,84 @@ const EnhancedAttendanceTable: React.FC<EnhancedAttendanceTableProps> = ({
     }
   };
 
+  // Mobile card view
+  if (isMobile) {
+    return (
+      <div className={className}>
+        <div className="space-y-4">
+          {data.map((record, index) => (
+            <Card key={index} className="overflow-hidden hover:shadow-md transition-shadow">
+              <div className="p-4">
+                {/* Header with name and schedule type */}
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <h3 className="font-medium text-base">{record.Name || "N/A"}</h3>
+                    <p className="text-sm text-gray-500">{record.Department || "N/A"}</p>
+                  </div>
+                  <div>
+                    {getScheduleTypeBadge(record.ScheduleType)}
+                  </div>
+                </div>
+                
+                {/* Date */}
+                <div className="mb-3">
+                  <p className="text-sm font-medium">{formatDate(record.Date)}</p>
+                </div>
+                
+                <div className="border-t my-3"></div>
+                
+                {/* Schedule times */}
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <p className="text-xs text-gray-500">Scheduled In</p>
+                    <p className="font-medium">{formatTime(record.ScheduledClockIn)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Scheduled Out</p>
+                    <p className="font-medium">{formatTime(record.ScheduledClockOut)}</p>
+                  </div>
+                </div>
+                
+                {/* Actual times */}
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className={cn(record.ClockInStatus === 'Late' ? 'p-1 rounded bg-red-50' : '')}>
+                    <p className="text-xs text-gray-500">Actual In</p>
+                    <p className="font-medium">{formatTime(record.ActualClockIn)}</p>
+                  </div>
+                  <div className={cn(record.ClockOutStatus === 'Early' ? 'p-1 rounded bg-yellow-50' : '')}>
+                    <p className="text-xs text-gray-500">Actual Out</p>
+                    <p className="font-medium">{formatTime(record.ActualClockOut)}</p>
+                  </div>
+                </div>
+                
+                {/* Controller */}
+                <div className="mb-3">
+                  <p className="text-xs text-gray-500">Controller</p>
+                  <p className="text-sm">{record.ClockInController || record.ClockOutController || "N/A"}</p>
+                </div>
+                
+                {/* Status badges */}
+                <div className="flex flex-wrap gap-2">
+                  {record.ClockInStatus && (
+                    <Badge className={cn("text-xs", getStatusBadgeColor(record.ClockInStatus))}>
+                      IN: {record.ClockInStatus}
+                    </Badge>
+                  )}
+                  {record.ClockOutStatus && (
+                    <Badge className={cn("text-xs", getStatusBadgeColor(record.ClockOutStatus))}>
+                      OUT: {record.ClockOutStatus}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  
+  // Desktop table view
   return (
     <div className={className}>
       <div className="rounded-md border overflow-x-auto">
@@ -212,45 +334,49 @@ const EnhancedAttendanceTable: React.FC<EnhancedAttendanceTableProps> = ({
       </div>
 
       {totalPages > 1 && (
-        <Pagination className="mt-4">
-          <PaginationContent>
+        <Pagination className={cn("mt-4", isMobile && "pb-6")}>
+          <PaginationContent className={cn(isMobile && "flex-wrap justify-center")}>
             <PaginationItem>
               <PaginationPrevious
-                className={cn(currentPage === 1 && "pointer-events-none opacity-50")}
+                className={cn(
+                  currentPage === 1 && "pointer-events-none opacity-50",
+                  isMobile && "h-10 w-10 p-0 flex items-center justify-center"
+                )}
                 onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
               />
             </PaginationItem>
             
-            {/* Pagination rendering logic */}
-            {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+            {/* Pagination rendering logic - simplified for mobile */}
+            {Array.from({ length: Math.min(isMobile ? 3 : 5, totalPages) }).map((_, i) => {
               let pageNumber: number;
               
-              if (totalPages <= 5) {
+              if (totalPages <= (isMobile ? 3 : 5)) {
                 pageNumber = i + 1;
-              } else if (currentPage <= 3) {
+              } else if (currentPage <= (isMobile ? 2 : 3)) {
                 pageNumber = i + 1;
-              } else if (currentPage >= totalPages - 2) {
-                pageNumber = totalPages - 4 + i;
+              } else if (currentPage >= totalPages - (isMobile ? 1 : 2)) {
+                pageNumber = totalPages - (isMobile ? 2 : 4) + i;
               } else {
-                pageNumber = currentPage - 2 + i;
+                pageNumber = currentPage - (isMobile ? 1 : 2) + i;
               }
               
               if (pageNumber === 1 || pageNumber === totalPages || 
-                (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)) {
+                (pageNumber >= currentPage - (isMobile ? 0 : 1) && pageNumber <= currentPage + (isMobile ? 0 : 1))) {
                 return (
                   <PaginationItem key={pageNumber}>
                     <PaginationLink
                       isActive={pageNumber === currentPage}
                       onClick={() => onPageChange(pageNumber)}
+                      className={cn(isMobile && "h-10 w-10 p-0 flex items-center justify-center")}
                     >
                       {pageNumber}
                     </PaginationLink>
                   </PaginationItem>
                 );
-              } else if (pageNumber === currentPage - 2 || pageNumber === currentPage + 2) {
+              } else if (pageNumber === currentPage - (isMobile ? 1 : 2) || pageNumber === currentPage + (isMobile ? 1 : 2)) {
                 return (
                   <PaginationItem key={`ellipsis-${pageNumber}`}>
-                    <PaginationEllipsis />
+                    <PaginationEllipsis className={cn(isMobile && "h-10 w-10 p-0 flex items-center justify-center")} />
                   </PaginationItem>
                 );
               }
@@ -259,7 +385,10 @@ const EnhancedAttendanceTable: React.FC<EnhancedAttendanceTableProps> = ({
             
             <PaginationItem>
               <PaginationNext
-                className={cn(currentPage === totalPages && "pointer-events-none opacity-50")}
+                className={cn(
+                  currentPage === totalPages && "pointer-events-none opacity-50",
+                  isMobile && "h-10 w-10 p-0 flex items-center justify-center"
+                )}
                 onClick={() => currentPage < totalPages && onPageChange(currentPage + 1)}
               />
             </PaginationItem>

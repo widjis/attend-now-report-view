@@ -14,6 +14,11 @@ import {
   Skeleton,
   useTheme,
   useMediaQuery,
+  Card,
+  CardContent,
+  Grid,
+  Divider,
+  Stack,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { EnhancedAttendanceRecord } from "@/types/enhancedAttendance";
@@ -200,8 +205,150 @@ const EnhancedAttendanceTable: React.FC<EnhancedAttendanceTableProps> = ({
     );
   };
 
-  return (
-    <Box className={className}>
+  // Card view for mobile
+  const renderMobileCardView = () => {
+    return (
+      <Grid container spacing={2}>
+        {data.map((record, index) => (
+          <Grid item xs={12} key={index}>
+            <Card sx={{ 
+              borderRadius: 2, 
+              boxShadow: 2,
+              '&:nth-of-type(odd)': { 
+                borderLeft: `4px solid ${theme.palette.primary.main}` 
+              },
+              '&:nth-of-type(even)': { 
+                borderLeft: `4px solid ${theme.palette.secondary.main}` 
+              }
+            }}>
+              <CardContent>
+                <Box sx={{ mb: 1.5 }}>
+                  <Typography variant="h6" component="div" fontWeight={600}>
+                    {record.Name || "N/A"}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {record.Department || "N/A"}{record.Position ? ` • ${record.Position}` : ""}
+                  </Typography>
+                </Box>
+                
+                <Divider sx={{ my: 1.5 }} />
+                
+                <Grid container spacing={1}>
+                  <Grid item xs={6}>
+                    <Typography variant="body2" color="text.secondary">Date</Typography>
+                    <Typography variant="body1" fontWeight={500}>
+                      {formatDate(record.Date)}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="body2" color="text.secondary">Schedule</Typography>
+                    {getScheduleTypeDisplay(record.ScheduleType)}
+                  </Grid>
+                </Grid>
+                
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>Schedule Time</Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>IN:</Typography>
+                        <Typography variant="body1" fontFamily="monospace" fontWeight={500}>
+                          {formatTime(record.ScheduledClockIn)}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>OUT:</Typography>
+                        <Typography variant="body1" fontFamily="monospace" fontWeight={500}>
+                          {formatTime(record.ScheduledClockOut)}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </Box>
+                
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>Actual Time</Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        p: 1,
+                        borderRadius: 1,
+                        bgcolor: record.ClockInStatus === 'Out of Range' 
+                          ? 'rgba(244, 67, 54, 0.15)' 
+                          : record.ClockInStatus === 'Late' 
+                          ? 'rgba(244, 67, 54, 0.05)' 
+                          : 'transparent'
+                      }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>IN:</Typography>
+                        <Typography variant="body1" fontFamily="monospace" fontWeight={500}>
+                          {formatTime(record.ActualClockIn)}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        p: 1,
+                        borderRadius: 1,
+                        bgcolor: record.ClockOutStatus === 'Out of Range' 
+                          ? 'rgba(244, 67, 54, 0.15)' 
+                          : record.ClockOutStatus === 'Early' 
+                          ? 'rgba(255, 193, 7, 0.05)' 
+                          : 'transparent'
+                      }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>OUT:</Typography>
+                        <Typography variant="body1" fontFamily="monospace" fontWeight={500}>
+                          {formatTime(record.ActualClockOut)}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </Box>
+                
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>Status</Typography>
+                  <Stack direction="row" spacing={1}>
+                    {record.ClockInStatus && (
+                      <StatusChip 
+                        statustype={record.ClockInStatus.toLowerCase()}
+                        label={`IN: ${record.ClockInStatus}`}
+                        size="small"
+                      />
+                    )}
+                    {record.ClockOutStatus && (
+                      <StatusChip 
+                        statustype={record.ClockOutStatus.toLowerCase()}
+                        label={`OUT: ${record.ClockOutStatus}`}
+                        size="small"
+                      />
+                    )}
+                  </Stack>
+                </Box>
+                
+                {(record.ClockInController || record.ClockOutController) && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>Controller</Typography>
+                    <Typography variant="body2">
+                      {record.ClockInController || record.ClockOutController || "N/A"}
+                    </Typography>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    );
+  };
+
+  // Table view for desktop
+  const renderDesktopTableView = () => {
+    return (
       <Paper>
         <StyledTableContainer>
           <Table stickyHeader>
@@ -209,14 +356,14 @@ const EnhancedAttendanceTable: React.FC<EnhancedAttendanceTableProps> = ({
               <TableRow>
                 <StyledTableCell>Name</StyledTableCell>
                 <StyledTableCell>Department</StyledTableCell>
-                {!isMobile && <StyledTableCell>Position</StyledTableCell>}
+                <StyledTableCell>Position</StyledTableCell>
                 <StyledTableCell>Date</StyledTableCell>
                 <StyledTableCell>Schedule</StyledTableCell>
                 <StyledTableCell>C IN (Schedule)</StyledTableCell>
                 <StyledTableCell>C OUT (Schedule)</StyledTableCell>
                 <StyledTableCell>Actual C IN</StyledTableCell>
                 <StyledTableCell>Actual C OUT</StyledTableCell>
-                {!isMobile && <StyledTableCell>Controller</StyledTableCell>}
+                <StyledTableCell>Controller</StyledTableCell>
                 <StyledTableCell>Status</StyledTableCell>
               </TableRow>
             </StyledTableHead>
@@ -241,13 +388,11 @@ const EnhancedAttendanceTable: React.FC<EnhancedAttendanceTableProps> = ({
                       {record.Department || "N/A"}
                     </Typography>
                   </TableCell>
-                  {!isMobile && (
-                    <TableCell>
-                      <Typography variant="body2">
-                        {record.Position || "N/A"}
-                      </Typography>
-                    </TableCell>
-                  )}
+                  <TableCell>
+                    <Typography variant="body2">
+                      {record.Position || "N/A"}
+                    </Typography>
+                  </TableCell>
                   <TableCell>
                     <Typography variant="body2">
                       {formatDate(record.Date)}
@@ -282,13 +427,11 @@ const EnhancedAttendanceTable: React.FC<EnhancedAttendanceTableProps> = ({
                       {formatTime(record.ActualClockOut)}
                     </Typography>
                   </HighlightedCell>
-                  {!isMobile && (
-                    <TableCell>
-                      <Typography variant="body2">
-                        {record.ClockInController || record.ClockOutController || "N/A"}
-                      </Typography>
-                    </TableCell>
-                  )}
+                  <TableCell>
+                    <Typography variant="body2">
+                      {record.ClockInController || record.ClockOutController || "N/A"}
+                    </Typography>
+                  </TableCell>
                   <TableCell>
                     <Box display="flex" flexDirection="column" gap={0.5}>
                       {record.ClockInStatus && (
@@ -313,6 +456,12 @@ const EnhancedAttendanceTable: React.FC<EnhancedAttendanceTableProps> = ({
           </Table>
         </StyledTableContainer>
       </Paper>
+    );
+  };
+
+  return (
+    <Box className={className}>
+      {isMobile ? renderMobileCardView() : renderDesktopTableView()}
 
       {totalPages > 1 && (
         <Box display="flex" justifyContent="center" mt={3}>

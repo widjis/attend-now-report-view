@@ -1,7 +1,7 @@
 /**
  * Utility to reset or create a specific user password
  */
-require('dotenv').config({ path: '../../.env' });
+require('dotenv').config();
 const sql = require('mssql');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');

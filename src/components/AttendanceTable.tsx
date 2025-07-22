@@ -14,7 +14,14 @@ import {
   Typography,
   Chip,
   Skeleton,
-  TableSortLabel
+  TableSortLabel,
+  Card,
+  CardContent,
+  Grid,
+  Divider,
+  Stack,
+  useTheme,
+  useMediaQuery
 } from "@mui/material";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -51,6 +58,8 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
 }) => {
   const [sortColumn, setSortColumn] = useState<keyof AttendanceRecord | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const handleSort = (column: keyof AttendanceRecord) => {
     if (sortColumn === column) {
@@ -76,6 +85,40 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
 
   // Display skeleton loader while loading
   if (isLoading) {
+    if (isMobile) {
+      return (
+        <Box className={className}>
+          <Grid container spacing={2}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Grid item xs={12} key={i}>
+                <Card>
+                  <CardContent>
+                    <Skeleton variant="text" width="70%" height={32} />
+                    <Skeleton variant="text" width="40%" height={20} />
+                    <Divider sx={{ my: 1.5 }} />
+                    <Grid container spacing={2}>
+                      <Grid item xs={6}>
+                        <Skeleton variant="text" width="100%" height={20} />
+                        <Skeleton variant="text" width="80%" height={24} />
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Skeleton variant="text" width="100%" height={20} />
+                        <Skeleton variant="text" width="60%" height={24} />
+                      </Grid>
+                    </Grid>
+                    <Box sx={{ mt: 2 }}>
+                      <Skeleton variant="text" width="40%" height={20} />
+                      <Skeleton variant="rectangular" width="30%" height={32} sx={{ borderRadius: 1, mt: 1 }} />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      );
+    }
+    
     return (
       <TableContainer component={Paper} className={className}>
         <Table>
@@ -108,6 +151,23 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
 
   // Display empty state
   if (data.length === 0) {
+    if (isMobile) {
+      return (
+        <Box className={className}>
+          <Card sx={{ minHeight: 200, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <CardContent>
+              <Typography variant="h6" component="h3" align="center">
+                No attendance records found
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }} align="center">
+                Try adjusting your filters or search criteria
+              </Typography>
+            </CardContent>
+          </Card>
+        </Box>
+      );
+    }
+    
     return (
       <Box 
         sx={{ 
@@ -121,6 +181,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
           borderRadius: 1, 
           textAlign: 'center' 
         }}
+        className={className}
       >
         <Typography variant="h6" component="h3">
           No attendance records found
@@ -161,6 +222,111 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
   }
 
 
+  // Render mobile card view for actual data
+  if (isMobile) {
+    return (
+      <Box className={className}>
+        <Box sx={{ bgcolor: 'grey.50', px: 2, py: 1, textAlign: 'right', mb: 2 }}>
+          <Typography variant="caption" color="text.secondary">
+            Times are displayed in {TIMEZONE_DISPLAY} (database native timezone)
+          </Typography>
+        </Box>
+        
+        <Grid container spacing={2}>
+          {sortedData.map((record, index) => (
+            <Grid item xs={12} key={index}>
+              <Card sx={{ 
+                boxShadow: 2, 
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  boxShadow: 4,
+                  transform: 'translateY(-2px)'
+                }
+              }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                    <Typography variant="h6" component="h3" sx={{ fontWeight: 'medium' }}>
+                      {record.Name || "N/A"}
+                    </Typography>
+                    <Chip
+                      label={record.ClockEvent || "N/A"}
+                      color={record.ClockEvent === "Clock In" ? "success" : "warning"}
+                      size="small"
+                      sx={{ fontWeight: 'medium' }}
+                    />
+                  </Box>
+                  
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Card No: {record.CardNo || "N/A"}
+                  </Typography>
+                  
+                  <Divider sx={{ my: 1.5 }} />
+                  
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" color="text.secondary">
+                        Department
+                      </Typography>
+                      <Typography variant="body1">
+                        {record.Department || "N/A"}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" color="text.secondary">
+                        Position
+                      </Typography>
+                      <Typography variant="body1">
+                        {record.Position || "N/A"}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                  
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Date & Time
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                      {formatDateTime(record.TrDateTime)}
+                    </Typography>
+                  </Box>
+                  
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Controller
+                    </Typography>
+                    <Typography variant="body1">
+                      {record.TrController || "N/A"}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+        
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+          <Pagination
+            count={totalPages}
+            page={currentPage}
+            onChange={(_, page) => onPageChange(page)}
+            color="primary"
+            size="large"
+            showFirstButton
+            showLastButton
+            sx={{ 
+              '& .MuiPaginationItem-root': { 
+                fontSize: '1rem',
+                minWidth: 40,
+                height: 40,
+              } 
+            }}
+          />
+        </Box>
+      </Box>
+    );
+  }
+  
+  // Render desktop table view
   return (
     <Box className={className}>
       <TableContainer component={Paper}>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AppBar,
   Box,
@@ -20,6 +20,9 @@ import {
   MenuItem,
   Divider,
   Chip,
+  SwipeableDrawer,
+  Fade,
+  Backdrop,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -43,15 +46,31 @@ interface AppLayoutProps {
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, checkPermission } = useAuth();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  
+  // Close drawer when navigating to a new route on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setMobileOpen(false);
+    }
+  }, [location.pathname, isMobile]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
+  };
+  
+  const handleDrawerOpen = () => {
+    setMobileOpen(true);
+  };
+  
+  const handleDrawerClose = () => {
+    setMobileOpen(false);
   };
 
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -119,7 +138,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           >
             A
           </Avatar>
-          <Box sx={{ flexGrow: 1 }}>
+          <Box sx={{ flexGrow: 1, minWidth: isMobile ? '60%' : 'auto' }}>
             <Typography variant="h6" noWrap component="div" fontWeight={600}>
               MTI Attendance System
             </Typography>
@@ -133,7 +152,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       
       {/* User Info Section */}
       <Box sx={{ p: 2, bgcolor: theme.palette.grey[50] }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1, flexWrap: 'wrap' }}>
           <Avatar sx={{ width: 32, height: 32, bgcolor: theme.palette.secondary.main }}>
             <PersonIcon fontSize="small" />
           </Avatar>
@@ -152,21 +171,23 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       </Box>
       <Divider />
 
-      <List>
+      <List sx={{ py: 1 }}>
         {filteredMenuItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
+          <ListItem key={item.text} disablePadding sx={{ mb: isMobile ? 1 : 0 }}>
             <ListItemButton
               selected={location.pathname === item.path}
               onClick={() => {
                 navigate(item.path);
-                if (isMobile) {
-                  setMobileOpen(false);
-                }
+                // Drawer will auto-close via useEffect when route changes
               }}
               sx={{
+                py: isMobile ? 1.5 : 1, // Taller touch targets on mobile
+                borderRadius: isMobile ? 1 : 0, // Rounded corners on mobile
+                mx: isMobile ? 1 : 0, // Horizontal margin on mobile
                 '&.Mui-selected': {
                   backgroundColor: theme.palette.primary.main + '15',
-                  borderRight: `3px solid ${theme.palette.primary.main}`,
+                  borderRight: !isMobile ? `3px solid ${theme.palette.primary.main}` : 'none',
+                  borderLeft: isMobile ? `3px solid ${theme.palette.primary.main}` : 'none',
                   '& .MuiListItemIcon-root': {
                     color: theme.palette.primary.main,
                   },
@@ -178,10 +199,19 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 '&:hover': {
                   backgroundColor: theme.palette.action.hover,
                 },
+                // Ripple effect for better touch feedback
+                '& .MuiTouchRipple-root': {
+                  color: theme.palette.primary.main,
+                },
               }}
             >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
+              <ListItemIcon sx={{ minWidth: isMobile ? 40 : 56 }}>{item.icon}</ListItemIcon>
+              <ListItemText 
+                primary={item.text} 
+                primaryTypographyProps={{
+                  fontSize: isMobile ? '0.95rem' : 'inherit',
+                }}
+              />
             </ListItemButton>
           </ListItem>
         ))}
@@ -194,38 +224,71 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       <CssBaseline />
       <AppBar
         position="fixed"
+        elevation={0}
         sx={{
           width: { md: `calc(100% - ${drawerWidth}px)` },
           ml: { md: `${drawerWidth}px` },
           bgcolor: 'background.paper',
           color: 'text.primary',
-          boxShadow: 1,
+          boxShadow: isMobile ? 2 : 1,
           borderBottom: `1px solid ${theme.palette.divider}`,
+          transition: theme.transitions.create(['width', 'margin'], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+          }),
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ minHeight: { xs: 56, sm: 64 } }}>
           <IconButton
             color="inherit"
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { md: 'none' } }}
+            sx={{ 
+              mr: 2, 
+              display: { md: 'none' },
+              color: theme.palette.primary.main,
+            }}
           >
             <MenuIcon />
           </IconButton>
           
+          {isMobile && (
+            <Typography 
+              variant="subtitle1" 
+              component="div" 
+              sx={{ 
+                fontWeight: 600,
+                flexGrow: 1,
+                fontSize: isSmallMobile ? '0.9rem' : '1rem',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              MTI Attendance
+            </Typography>
+          )}
+          
           <Box sx={{ flexGrow: 1 }} />
           
           <IconButton
-            size="large"
+            size={isMobile ? "medium" : "large"}
             edge="end"
             aria-label="account of current user"
             aria-controls="primary-search-account-menu"
             aria-haspopup="true"
             onClick={handleProfileMenuOpen}
             color="inherit"
+            sx={{ 
+              ml: 1,
+              bgcolor: theme.palette.mode === 'light' ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.08)',
+              '&:hover': {
+                bgcolor: theme.palette.mode === 'light' ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.12)',
+              }
+            }}
           >
-            <AccountIcon />
+            <AccountIcon fontSize={isMobile ? "small" : "medium"} />
           </IconButton>
         </Toolbar>
       </AppBar>
@@ -244,19 +307,57 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         }}
         open={Boolean(anchorEl)}
         onClose={handleProfileMenuClose}
+        PaperProps={{
+          elevation: 3,
+          sx: {
+            minWidth: isMobile ? 200 : 220,
+            borderRadius: 2,
+            mt: 1,
+            '& .MuiMenuItem-root': {
+              py: isMobile ? 1.5 : 1, // Taller touch targets on mobile
+            },
+          },
+        }}
       >
-        <MenuItem onClick={handleProfileMenuClose}>
+        {user && user.role !== 'guest' && (
+          <Box sx={{ px: 2, py: 1.5, bgcolor: theme.palette.grey[50] }}>
+            <Typography variant="subtitle2" fontWeight={600}>
+              {user.username}
+            </Typography>
+            <Chip
+              label={user.role}
+              size="small"
+              color={user.role === 'admin' ? 'primary' : 'secondary'}
+              sx={{ fontSize: '0.7rem', height: 20, mt: 0.5 }}
+            />
+          </Box>
+        )}
+        <MenuItem 
+          onClick={handleProfileMenuClose}
+          sx={{ 
+            py: isMobile ? 1.5 : 1,
+            '&:hover': { bgcolor: theme.palette.action.hover },
+          }}
+        >
           <ListItemIcon>
-            <PersonIcon fontSize="small" />
+            <PersonIcon fontSize="small" color="primary" />
           </ListItemIcon>
-          Profile
+          <Typography variant="body2">Profile</Typography>
         </MenuItem>
         <Divider />
-        <MenuItem onClick={handleLogout}>
+        <MenuItem 
+          onClick={handleLogout}
+          sx={{ 
+            py: isMobile ? 1.5 : 1,
+            '&:hover': { bgcolor: theme.palette.action.hover },
+          }}
+        >
           <ListItemIcon>
-            <LogoutIcon fontSize="small" />
+            <LogoutIcon fontSize="small" color="error" />
           </ListItemIcon>
-          {user?.role === 'guest' ? 'Sign In' : 'Logout'}
+          <Typography variant="body2">
+            {user?.role === 'guest' ? 'Sign In' : 'Logout'}
+          </Typography>
         </MenuItem>
       </Menu>
 
@@ -265,10 +366,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
         aria-label="mailbox folders"
       >
-        <Drawer
+        <SwipeableDrawer
           variant="temporary"
           open={mobileOpen}
-          onClose={handleDrawerToggle}
+          onOpen={handleDrawerOpen}
+          onClose={handleDrawerClose}
           ModalProps={{
             keepMounted: true,
           }}
@@ -276,12 +378,18 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             display: { xs: 'block', md: 'none' },
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
-              width: drawerWidth,
+              width: isSmallMobile ? '85%' : drawerWidth,
+              overflowY: 'auto',
             },
           }}
         >
+          <Backdrop
+            sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+            open={mobileOpen}
+            onClick={handleDrawerClose}
+          />
           {drawer}
-        </Drawer>
+        </SwipeableDrawer>
         <Drawer
           variant="permanent"
           sx={{
@@ -304,11 +412,20 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           width: { md: `calc(100% - ${drawerWidth}px)` },
           minHeight: '100vh',
           bgcolor: 'grey.50',
+          overflowX: 'hidden', // Prevent horizontal scrolling on mobile
         }}
       >
         <Toolbar />
-        <Container maxWidth="xl" sx={{ py: 3 }}>
-          {children}
+        <Container 
+          maxWidth="xl" 
+          sx={{ 
+            py: 3,
+            px: { xs: 2, sm: 3 }, // Responsive padding
+          }}
+        >
+          <Fade in={true} timeout={300}>
+            <Box>{children}</Box>
+          </Fade>
         </Container>
       </Box>
     </Box>
