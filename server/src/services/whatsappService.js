@@ -26,7 +26,7 @@ class WhatsAppService {
       
       const query = `
         SELECT ConfigKey, ConfigValue
-        FROM tblWhatsAppConfig
+        FROM [EmployeeWorkflow].[dbo].[tblWhatsAppConfig]
         WHERE IsActive = 1
       `;
 
@@ -422,7 +422,7 @@ class WhatsAppService {
       
       for (const [key, value] of Object.entries(configUpdates)) {
         const query = `
-          UPDATE tblWhatsAppConfig
+          UPDATE [EmployeeWorkflow].[dbo].[tblWhatsAppConfig]
           SET ConfigValue = @value, UpdatedAt = GETDATE()
           WHERE ConfigKey = @key
         `;

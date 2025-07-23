@@ -84,9 +84,7 @@ const AppRoutes = () => {
         <Route 
           path="/reports" 
           element={
-            <ProtectedRoute requireAuth={true} requiredRole="user">
-              <Reports />
-            </ProtectedRoute>
+            <Navigate to="/settings?fromReports=true" replace />
           } 
         />
         

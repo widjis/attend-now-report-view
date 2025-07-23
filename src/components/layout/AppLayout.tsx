@@ -113,12 +113,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       permission: 'attendance-report:read',
     },
     {
-      text: 'Reports',
-      icon: <ReportIcon />,
-      path: '/reports',
-      permission: 'reports:read',
-    },
-    {
       text: 'Settings',
       icon: <PersonIcon />,
       path: '/settings',

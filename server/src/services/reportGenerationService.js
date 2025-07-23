@@ -1,4 +1,4 @@
-const { poolPromise, sql } = require('../config/db');
+const { poolPromise, orangeDbPoolPromise, sql } = require('../config/db');
 const attendanceProcessingService = require('./attendanceProcessingService');
 
 /**
@@ -8,18 +8,7 @@ const attendanceProcessingService = require('./attendanceProcessingService');
  */
 class ReportGenerationService {
   constructor() {
-    // Orange-Temp database configuration for mcg_clocking_tbl
-    this.orangeTempConfig = {
-      user: process.env.ORANGE_DB_USER || 'IT.MTI',
-      password: process.env.ORANGE_DB_PASSWORD || 'morowali',
-      server: process.env.ORANGE_DB_SERVER || '10.1.1.75',
-      database: process.env.ORANGE_DB_NAME || 'ORANGE-PROD',
-      options: {
-        encrypt: true,
-        trustServerCertificate: true
-      },
-      port: parseInt(process.env.ORANGE_DB_PORT) || 1433
-    };
+    // Configuration will be handled by db.js
   }
 
   /**
@@ -28,12 +17,11 @@ class ReportGenerationService {
    */
   async connectOrangeTemp() {
     try {
-      const sql = require('mssql');
-      const pool = new sql.ConnectionPool(this.orangeTempConfig);
-      await pool.connect();
+      const pool = await orangeDbPoolPromise; // Use ORANGE-PROD database connection
+      console.log('Connected to ORANGE-PROD database');
       return pool;
     } catch (error) {
-      console.error('Error connecting to Orange-Temp database:', error);
+      console.error('Error connecting to ORANGE-PROD database:', error);
       throw error;
     }
   }

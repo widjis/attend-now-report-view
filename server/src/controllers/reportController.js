@@ -372,21 +372,21 @@ class ReportController {
 
       let query = `
         SELECT 
-          Id, ReportType, Parameters, Status, ErrorMessage,
-          WhatsAppSent, WhatsAppChatId, CreatedBy, CreatedAt
-        FROM tblReportGenerationLog
+          Id, ReportType, StartDate, EndDate, Status, ErrorMessage,
+          WhatsAppStatus, WhatsAppSentAt, WhatsAppError, GeneratedAt, CompletedAt, FilePath
+        FROM [EmployeeWorkflow].[dbo].[tblReportGenerationLog]
         WHERE 1=1
       `;
 
       const request = pool.request();
 
       if (startDate) {
-        query += ' AND CreatedAt >= @startDate';
+        query += ' AND GeneratedAt >= @startDate';
         request.input('startDate', sql.DateTime, new Date(startDate));
       }
 
       if (endDate) {
-        query += ' AND CreatedAt <= @endDate';
+        query += ' AND GeneratedAt <= @endDate';
         request.input('endDate', sql.DateTime, new Date(endDate));
       }
 
@@ -395,7 +395,7 @@ class ReportController {
         request.input('status', sql.NVarChar, status);
       }
 
-      query += ' ORDER BY CreatedAt DESC';
+      query += ' ORDER BY GeneratedAt DESC';
       query += ` OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`;
 
       request.input('offset', sql.Int, offset);
@@ -406,19 +406,19 @@ class ReportController {
       // Get total count
       let countQuery = `
         SELECT COUNT(*) as total
-        FROM tblReportGenerationLog
+        FROM [EmployeeWorkflow].[dbo].[tblReportGenerationLog]
         WHERE 1=1
       `;
 
       const countRequest = pool.request();
 
       if (startDate) {
-        countQuery += ' AND CreatedAt >= @startDate';
+        countQuery += ' AND GeneratedAt >= @startDate';
         countRequest.input('startDate', sql.DateTime, new Date(startDate));
       }
 
       if (endDate) {
-        countQuery += ' AND CreatedAt <= @endDate';
+        countQuery += ' AND GeneratedAt <= @endDate';
         countRequest.input('endDate', sql.DateTime, new Date(endDate));
       }
 
@@ -462,7 +462,7 @@ class ReportController {
       
       const query = `
         SELECT DISTINCT TrController
-        FROM tblTransaction
+        FROM [DataDBEnt].[dbo].[tblTransaction]
         WHERE TrController IS NOT NULL
         ORDER BY TrController
       `;

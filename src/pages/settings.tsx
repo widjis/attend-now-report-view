@@ -14,8 +14,16 @@ import { useAuth } from '../contexts/AuthContext';
 import UserManagement from '../components/settings/UserManagement';
 import RoleManagement from '../components/settings/RoleManagement';
 import AccountSettings from '../components/settings/AccountSettings';
-import { Settings as SettingsIcon } from '@mui/icons-material';
+import { 
+  Settings as SettingsIcon,
+  Assessment as AssessmentIcon,
+  History as HistoryIcon,
+  BarChart as BarChartIcon,
+  WhatsApp as WhatsAppIcon,
+} from '@mui/icons-material';
 import PageHeader from '../components/PageHeader';
+import { ReportGeneration, ReportHistory, ReportStatistics, WhatsAppSettings } from '../components/reports';
+import { useLocation } from 'react-router-dom';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -52,12 +60,27 @@ function a11yProps(index: number) {
 
 const Settings: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
+  const [reportTabValue, setReportTabValue] = useState(0);
   const { user, hasRole } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const location = useLocation();
+
+  // Check if we're coming from the reports page
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const fromReports = params.get('fromReports');
+    if (fromReports === 'true') {
+      setTabValue(3); // Set to Reports tab
+    }
+  }, [location]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+  };
+
+  const handleReportTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setReportTabValue(newValue);
   };
 
   // Redirect if not admin
@@ -72,7 +95,7 @@ const Settings: React.FC = () => {
     <Box>
       <PageHeader 
         title="Settings" 
-        subtitle="Manage system settings and user accounts" 
+        subtitle="Manage system settings, user accounts, and reports" 
         currentPage="dashboard" 
       />
 
@@ -97,6 +120,7 @@ const Settings: React.FC = () => {
               <Tab label="User Management" {...a11yProps(0)} />
               <Tab label="Role Management" {...a11yProps(1)} />
               <Tab label="Account Settings" {...a11yProps(2)} />
+              <Tab label="Reports" {...a11yProps(3)} />
             </Tabs>
           </Box>
 
@@ -108,6 +132,38 @@ const Settings: React.FC = () => {
           </TabPanel>
           <TabPanel value={tabValue} index={2}>
             <AccountSettings />
+          </TabPanel>
+          <TabPanel value={tabValue} index={3}>
+            <Box>
+              <Paper sx={{ mb: 3 }}>
+                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                  <Tabs
+                    value={reportTabValue}
+                    onChange={handleReportTabChange}
+                    aria-label="reports tabs"
+                    variant="scrollable"
+                    scrollButtons="auto"
+                  >
+                    <Tab icon={<AssessmentIcon />} label="Generate Report" {...a11yProps(0)} />
+                    <Tab icon={<HistoryIcon />} label="Report History" {...a11yProps(1)} />
+                    <Tab icon={<BarChartIcon />} label="Statistics" {...a11yProps(2)} />
+                    <Tab icon={<WhatsAppIcon />} label="WhatsApp Settings" {...a11yProps(3)} />
+                  </Tabs>
+                </Box>
+                <TabPanel value={reportTabValue} index={0}>
+                  <ReportGeneration />
+                </TabPanel>
+                <TabPanel value={reportTabValue} index={1}>
+                  <ReportHistory />
+                </TabPanel>
+                <TabPanel value={reportTabValue} index={2}>
+                  <ReportStatistics />
+                </TabPanel>
+                <TabPanel value={reportTabValue} index={3}>
+                  <WhatsAppSettings />
+                </TabPanel>
+              </Paper>
+            </Box>
           </TabPanel>
         </Paper>
       </Container>

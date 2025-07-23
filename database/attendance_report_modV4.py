@@ -44,9 +44,16 @@ def get_config():
         'conn_str_data_db': (
             'DRIVER={SQL Server};'
             'SERVER=10.60.10.47;'
+            'DATABASE=DataDBEnt;'
+            'UID=sa;'
+            'PWD=Bl4ck3y34dmin'
+        ),
+        'conn_str_data_employee': (
+            'DRIVER={SQL Server};'
+            'SERVER=10.60.10.47;'
             'DATABASE=EmployeeWorkflow;'
-            'UID=vault;'
-            'PWD=Bl4ck3y34dm!n'
+            'UID=sa;'
+            'PWD=Bl4ck3y34dmin'
         ),
         'conn_str_orange_temp': (
             'DRIVER={SQL Server};'
@@ -83,6 +90,9 @@ def connect_data_db(config):
 
 def connect_orange_temp(config):
     return pyodbc.connect(config['conn_str_orange_temp'])
+
+def connect_data_employee(config):
+    return pyodbc.connect(config['conn_str_data_employee'])
 
 def retrieve_attendance_transactions(conn_data_db, tr_controller_list, start_dt, end_dt):
     """
@@ -578,6 +588,9 @@ def main():
     conn_data_db = connect_data_db(config)
     print("Connected to DataDBEnt.")
 
+    conn_data_emp = connect_data_employee(config)
+    print("Connected to EmployeeWorkflow.")
+
     conn_orange_temp = None
     if INSERT_TO_MCG_CLOCKING_TBL or not (config['MANUAL_TIME_IN'] and config['MANUAL_TIME_OUT']):
         conn_orange_temp = connect_orange_temp(config)
@@ -653,7 +666,7 @@ def main():
     if INSERT_TO_TBL_ATTENDANCE_REPORT or INSERT_TO_MCG_CLOCKING_TBL:
         if INSERT_TO_MCG_CLOCKING_TBL and conn_orange_temp is None:
             conn_orange_temp = connect_orange_temp(config)
-        insert_data(df_report, conn_data_db, conn_orange_temp, INSERT_TO_TBL_ATTENDANCE_REPORT, INSERT_TO_MCG_CLOCKING_TBL)
+        insert_data(df_report, conn_data_emp, conn_orange_temp, INSERT_TO_TBL_ATTENDANCE_REPORT, INSERT_TO_MCG_CLOCKING_TBL)
         print("Data inserted into the respective tables successfully.")
 
     # ----------------------------------------------------------------------

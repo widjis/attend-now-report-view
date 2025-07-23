@@ -1,4 +1,4 @@
-const { poolPromise, sql } = require('../config/db');
+const { poolPromise, dataDbPoolPromise, sql } = require('../config/db');
 
 /**
  * Attendance Processing Service
@@ -29,7 +29,20 @@ class AttendanceProcessingService {
    */
   async retrieveAttendanceTransactions(startDateTime, endDateTime, controllerList = null) {
     try {
-      const pool = await poolPromise;
+      const pool = await dataDbPoolPromise; // Use DataDBEnt database connection
+      
+      // First check if the required tables exist
+      const tableCheckQuery = `
+        SELECT TABLE_NAME 
+        FROM INFORMATION_SCHEMA.TABLES 
+        WHERE TABLE_TYPE = 'BASE TABLE' 
+        AND TABLE_NAME IN ('CardDB', 'tblTransaction')
+      `;
+      const tables = await pool.request().query(tableCheckQuery);
+      
+      if (tables.recordset.length < 2) {
+        throw new Error('Required tables (CardDB, tblTransaction) not found in DataDBEnt database');
+      }
       
       const controllers = controllerList || this.controllerList;
       const dateClause = `Lt.TrDateTime BETWEEN @startDate AND @endDate`;
@@ -58,9 +71,9 @@ class AttendanceProcessingService {
           Lt.TrController,
           Lt.UnitNo
         FROM 
-          [DataDBEnt].[dbo].[CardDB] Cdb
+          [CardDB] Cdb
         INNER JOIN 
-          [DataDBEnt].[dbo].[tblTransaction] Lt ON Cdb.CardNo = Lt.CardNo
+          [tblTransaction] Lt ON Cdb.CardNo = Lt.CardNo
         WHERE 
           ${dateClause}
         AND
@@ -83,6 +96,8 @@ class AttendanceProcessingService {
       }
 
       const result = await request.query(query);
+      
+      console.log(`Retrieved ${result.recordset.length} attendance transactions from DataDBEnt`);
       
       // Add InsertDate to each record
       const currentTime = new Date();
@@ -125,7 +140,7 @@ class AttendanceProcessingService {
         return { timeIn, timeOut };
       }
 
-      const pool = await poolPromise;
+      const pool = await dataDbPoolPromise; // Use DataDBEnt database connection
       
       const query = `
         SELECT TOP 1 TimeIn, TimeOut 
