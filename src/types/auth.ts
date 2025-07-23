@@ -54,13 +54,15 @@ export const DEFAULT_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: 'dashboard', actions: ['read'] },
     { resource: 'schedule', actions: ['read'] },
     { resource: 'enhanced-attendance', actions: ['read', 'export'] },
-    { resource: 'profile', actions: ['read', 'update'] }
+    { resource: 'profile', actions: ['read', 'update'] },
+    { resource: 'reports', actions: ['read'] }
     // Removed attendance-report resource from user permissions
   ],
   admin: [
     { resource: '*', actions: ['read', 'create', 'update', 'export'] },
     { resource: 'users', actions: ['read', 'create', 'update'] },
-    { resource: 'settings', actions: ['read', 'update'] }
+    { resource: 'settings', actions: ['read', 'update'] },
+    { resource: 'reports', actions: ['read', 'create', 'update', 'export'] }
   ],
   super_admin: [
     { resource: '*', actions: ['*'] }
@@ -89,6 +91,12 @@ export const ROUTE_PERMISSIONS: RoutePermission[] = [
     guestAllowed: false,
     requiredRole: 'admin',
     requiredPermissions: [{ resource: 'attendance-report', action: 'read' }]
+  },
+  {
+    path: '/reports',
+    guestAllowed: false,
+    requiredRole: 'user',
+    requiredPermissions: [{ resource: 'reports', action: 'read' }]
   },
   {
     path: '/users',
