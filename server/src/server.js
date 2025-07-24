@@ -11,7 +11,11 @@ const authRoutes = require('./routes/authRoutes');
 const usersRoutes = require('./routes/users');
 const debugRoutes = require('./routes/debug');
 const reportRoutes = require('./routes/reports');
+const syncRoutes = require('./routes/sync');
 const { poolPromise } = require('./config/db');
+
+// Import scheduler service for initialization
+const { SchedulerService } = require('./services/schedulerService');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -29,6 +33,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/debug', debugRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/sync', syncRoutes);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
@@ -43,10 +48,12 @@ app.get('/health', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   } catch (err) {
-    res.status(500).json({ 
-      status: 'error',
-      message: 'Database connection failed',
-      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    res.status(200).json({ 
+      status: 'ok',
+      database: 'disconnected',
+      message: 'Server is running but database is not available',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined,
+      timestamp: new Date().toISOString()
     });
   }
 });
@@ -64,10 +71,12 @@ app.get('/api/health', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   } catch (err) {
-    res.status(500).json({ 
-      status: 'error',
-      message: 'Database connection failed',
-      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    res.status(200).json({ 
+      status: 'ok',
+      database: 'disconnected',
+      message: 'Server is running but database is not available',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined,
+      timestamp: new Date().toISOString()
     });
   }
 });
@@ -81,6 +90,15 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
+  
+  // Initialize scheduler service
+  try {
+    const schedulerService = new SchedulerService();
+    await schedulerService.initialize();
+    console.log('✅ Scheduler service initialized successfully');
+  } catch (error) {
+    console.error('❌ Failed to initialize scheduler service:', error.message);
+  }
 });

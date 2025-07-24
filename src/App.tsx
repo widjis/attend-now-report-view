@@ -12,6 +12,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Schedule from "./pages/Schedule";
 import EnhancedAttendance from "./pages/EnhancedAttendance";
+import SyncAttendance from "./pages/SyncAttendance";
 import Settings from "./pages/settings";
 import Reports from "./pages/Reports";
 import Unauthorized from "./pages/Unauthorized";
@@ -68,6 +69,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <EnhancedAttendance />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/sync-attendance" 
+          element={
+            <ProtectedRoute requireAuth={true} requiredRole="user">
+              <SyncAttendance />
             </ProtectedRoute>
           } 
         />

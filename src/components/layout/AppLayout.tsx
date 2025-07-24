@@ -33,6 +33,7 @@ import {
   AccountCircle as AccountIcon,
   Logout as LogoutIcon,
   Person as PersonIcon,
+  Sync as SyncIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -105,6 +106,12 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       icon: <AssessmentIcon />,
       path: '/enhanced-attendance',
       permission: 'enhanced-attendance:read',
+    },
+    {
+      text: 'Sync Attendance',
+      icon: <SyncIcon />,
+      path: '/sync-attendance',
+      permission: 'sync-attendance:read',
     },
     {
       text: 'Attendance Report',

@@ -54,6 +54,7 @@ export const DEFAULT_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: 'dashboard', actions: ['read'] },
     { resource: 'schedule', actions: ['read'] },
     { resource: 'enhanced-attendance', actions: ['read', 'export'] },
+    { resource: 'sync-attendance', actions: ['read'] },
     { resource: 'profile', actions: ['read', 'update'] },
     // Reports is now part of settings
     { resource: 'settings', actions: ['read'] },
@@ -89,6 +90,12 @@ export const ROUTE_PERMISSIONS: RoutePermission[] = [
     path: '/enhanced-attendance',
     guestAllowed: true,
     requiredPermissions: [{ resource: 'enhanced-attendance', action: 'read' }]
+  },
+  {
+    path: '/sync-attendance',
+    guestAllowed: false,
+    requiredRole: 'user',
+    requiredPermissions: [{ resource: 'sync-attendance', action: 'read' }]
   },
   {
     path: '/attendance-report',

@@ -46,45 +46,73 @@ const orangeDbConfig = {
   port: parseInt(process.env.ORANGE_DB_PORT) || 1433
 };
 
-// Create database connection pools
-const poolPromise = new sql.ConnectionPool(config)
-  .connect()
-  .then(pool => {
-    console.log('Connected to MSSQL - EmployeeWorkflow');
-    return pool;
-  })
-  .catch(err => {
-    console.error('EmployeeWorkflow Database Connection Failed:', err);
-    throw err;
-  });
+// Create database connection pools with lazy initialization
+let poolPromise = null;
+let dataDbPoolPromise = null;
+let orangeDbPoolPromise = null;
 
-const dataDbPoolPromise = new sql.ConnectionPool(dataDbConfig)
-  .connect()
-  .then(pool => {
-    console.log('Connected to MSSQL - DataDBEnt');
-    return pool;
-  })
-  .catch(err => {
-    console.error('DataDBEnt Database Connection Failed:', err);
-    throw err;
-  });
+// Lazy connection function for EmployeeWorkflow
+const getPoolPromise = () => {
+  if (!poolPromise) {
+    poolPromise = new sql.ConnectionPool(config)
+      .connect()
+      .then(pool => {
+        console.log('Connected to MSSQL - EmployeeWorkflow');
+        return pool;
+      })
+      .catch(err => {
+        console.error('EmployeeWorkflow Database Connection Failed:', err);
+        poolPromise = null; // Reset so it can be retried
+        throw err;
+      });
+  }
+  return poolPromise;
+};
 
-const orangeDbPoolPromise = new sql.ConnectionPool(orangeDbConfig)
-  .connect()
-  .then(pool => {
-    console.log('Connected to MSSQL - ORANGE-PROD');
-    return pool;
-  })
-  .catch(err => {
-    console.error('ORANGE-PROD Database Connection Failed:', err);
-    throw err;
-  });
+// Lazy connection function for DataDBEnt
+const getDataDbPoolPromise = () => {
+  if (!dataDbPoolPromise) {
+    dataDbPoolPromise = new sql.ConnectionPool(dataDbConfig)
+      .connect()
+      .then(pool => {
+        console.log('Connected to MSSQL - DataDBEnt');
+        return pool;
+      })
+      .catch(err => {
+        console.error('DataDBEnt Database Connection Failed:', err);
+        dataDbPoolPromise = null; // Reset so it can be retried
+        throw err;
+      });
+  }
+  return dataDbPoolPromise;
+};
+
+// Lazy connection function for ORANGE-PROD
+const getOrangeDbPoolPromise = () => {
+  if (!orangeDbPoolPromise) {
+    orangeDbPoolPromise = new sql.ConnectionPool(orangeDbConfig)
+      .connect()
+      .then(pool => {
+        console.log('Connected to MSSQL - ORANGE-PROD');
+        return pool;
+      })
+      .catch(err => {
+        console.error('ORANGE-PROD Database Connection Failed:', err);
+        orangeDbPoolPromise = null; // Reset so it can be retried
+        throw err;
+      });
+  }
+  return orangeDbPoolPromise;
+};
 
 module.exports = {
   sql,
-  poolPromise,           // EmployeeWorkflow database
-  dataDbPoolPromise,     // DataDBEnt database
-  orangeDbPoolPromise,   // ORANGE-PROD database
+  get poolPromise() { return getPoolPromise(); },           // EmployeeWorkflow database (lazy)
+  get dataDbPoolPromise() { return getDataDbPoolPromise(); },     // DataDBEnt database (lazy)
+  get orangeDbPoolPromise() { return getOrangeDbPoolPromise(); },   // ORANGE-PROD database (lazy)
+  getPoolPromise,                          // Direct access to lazy function
+  getDataDbPoolPromise,                    // Direct access to lazy function
+  getOrangeDbPoolPromise,                  // Direct access to lazy function
   config,
   dataDbConfig,
   orangeDbConfig
