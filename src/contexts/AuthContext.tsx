@@ -10,12 +10,14 @@ import {
 import axios from 'axios';
 
 // API configuration
-const API_URL = 'http://localhost:5001/api';
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
 const AUTH_ENDPOINTS = {
   LOGIN: `${API_URL}/auth/login`,
   CHECK: `${API_URL}/auth/check`,
   ME: `${API_URL}/auth/me`,
 };
+
+console.log('Using API URL:', API_URL);
 
 // Initial state
 const initialState: AuthState = {
@@ -28,7 +30,7 @@ const initialState: AuthState = {
 // Action types
 type AuthAction =
   | { type: 'LOGIN_START' }
-  | { type: 'LOGIN_SUCCESS'; payload: User }
+  | { type: 'LOGIN_SUCCESS'; payload: { user: User; interceptorId: number } }
   | { type: 'LOGIN_FAILURE'; payload: string }
   | { type: 'LOGOUT' }
   | { type: 'SWITCH_TO_GUEST' }
@@ -47,7 +49,8 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
     case 'LOGIN_SUCCESS':
       return {
         ...state,
-        user: action.payload,
+        user: action.payload.user,
+        interceptorId: action.payload.interceptorId,
         isAuthenticated: true,
         isLoading: false,
         error: null,
@@ -67,6 +70,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         isAuthenticated: false,
         isLoading: false,
         error: null,
+        interceptorId: undefined,
       };
     case 'SWITCH_TO_GUEST':
       return {
@@ -77,9 +81,10 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
           role: 'guest',
           permissions: DEFAULT_PERMISSIONS.guest,
         },
-        isAuthenticated: true,
+        isAuthenticated: false,
         isLoading: false,
         error: null,
+        interceptorId: undefined,
       };
     case 'SET_LOADING':
       return {
@@ -105,16 +110,34 @@ interface AuthProviderProps {
 }
 
 // Setup axios interceptor for authentication
-const setupAxiosInterceptors = (token: string) => {
-  axios.interceptors.request.use(
+const setupAxiosInterceptors = (token: string): number => {
+  // Create a new interceptor and store its ID
+  const interceptorId = axios.interceptors.request.use(
     (config) => {
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
       return config;
     },
-    (error) => Promise.reject(error)
+    (error) => {
+      console.error('Axios request interceptor error:', error);
+      return Promise.reject(error);
+    }
   );
+  
+  // Add response interceptor for global error handling
+  axios.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (axios.isAxiosError(error) && error.code === 'ERR_NETWORK') {
+        console.error('Network error in axios interceptor:', error.message);
+      }
+      return Promise.reject(error);
+    }
+  );
+  
+  // Return the interceptor ID in case we need to eject it later
+  return interceptorId;
 };
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
@@ -129,8 +152,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const savedToken = localStorage.getItem('auth_token');
         
         if (savedToken) {
-          // Setup axios with the saved token
-          setupAxiosInterceptors(savedToken);
+          // Setup axios with the saved token and store the interceptor ID
+          const interceptorId = setupAxiosInterceptors(savedToken);
           
           // Verify token validity with the server
           const response = await axios.get(AUTH_ENDPOINTS.CHECK);
@@ -145,7 +168,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               permissions: DEFAULT_PERMISSIONS[response.data.user.role as UserRole] || [],
             };
             
-            dispatch({ type: 'LOGIN_SUCCESS', payload: userData });
+            dispatch({ 
+              type: 'LOGIN_SUCCESS', 
+              payload: { 
+                user: userData, 
+                interceptorId 
+              } 
+            });
           } else {
             // Token invalid, switch to guest
             localStorage.removeItem('auth_token');
@@ -170,8 +199,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     dispatch({ type: 'LOGIN_START' });
     
     try {
+      console.log('Attempting login to:', AUTH_ENDPOINTS.LOGIN);
+      
       // Call the login API
-      const response = await axios.post(AUTH_ENDPOINTS.LOGIN, credentials);
+      const response = await axios.post(AUTH_ENDPOINTS.LOGIN, credentials, {
+        timeout: 10000, // 10 second timeout
+      });
+      
+      console.log('Login response received:', response.status);
       
       if (response.data.success) {
         const { token, user } = response.data;
@@ -179,8 +214,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Save token to localStorage
         localStorage.setItem('auth_token', token);
         
-        // Setup axios interceptor with the new token
-        setupAxiosInterceptors(token);
+        // Remove existing interceptor if there is one
+        if (state.interceptorId !== undefined) {
+          axios.interceptors.request.eject(state.interceptorId);
+        }
+        
+        // Setup axios interceptor with the new token and store the ID
+        const interceptorId = setupAxiosInterceptors(token);
         
         // Map the API response to our User type
         const userData: User = {
@@ -191,27 +231,72 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           permissions: DEFAULT_PERMISSIONS[user.role as UserRole] || [],
         };
         
-        dispatch({ type: 'LOGIN_SUCCESS', payload: userData });
+        dispatch({ 
+          type: 'LOGIN_SUCCESS', 
+          payload: { 
+            user: userData, 
+            interceptorId 
+          } 
+        });
       } else {
         dispatch({ type: 'LOGIN_FAILURE', payload: response.data.message || 'Login failed' });
         throw new Error(response.data.message || 'Login failed');
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Login failed';
-      dispatch({ type: 'LOGIN_FAILURE', payload: errorMessage });
+      console.error('Login error details:', error);
+      
+      let errorMessage = 'Authentication failed';
+      
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ERR_NETWORK') {
+          errorMessage = 'Network error: Unable to connect to the server. Please check if the server is running.';
+          console.error('Network error details:', {
+            message: error.message,
+            config: error.config,
+            code: error.code
+          });
+        } else if (error.response) {
+          // The server responded with a status code outside the 2xx range
+          errorMessage = `Server error: ${error.response.status} - ${error.response.data?.message || 'Unknown error'}`;
+        } else if (error.request) {
+          // The request was made but no response was received
+          errorMessage = 'No response received from server. Please try again later.';
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      dispatch({ 
+        type: 'LOGIN_FAILURE', 
+        payload: errorMessage 
+      });
       throw error;
     }
   };
 
   // Logout function
   const logout = (): void => {
+    // Remove token from localStorage
     localStorage.removeItem('auth_token');
+    
+    // Eject the interceptor if it exists
+    if (state.interceptorId !== undefined) {
+      axios.interceptors.request.eject(state.interceptorId);
+    }
+    
     dispatch({ type: 'LOGOUT' });
   };
 
   // Switch to guest mode
   const switchToGuest = (): void => {
+    // Remove token from localStorage
     localStorage.removeItem('auth_token');
+    
+    // Eject the interceptor if it exists
+    if (state.interceptorId !== undefined) {
+      axios.interceptors.request.eject(state.interceptorId);
+    }
+    
     dispatch({ type: 'SWITCH_TO_GUEST' });
   };
 
