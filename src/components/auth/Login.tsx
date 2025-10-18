@@ -23,9 +23,13 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoginCredentials } from '@/types/auth';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ROUTE_PERMISSIONS } from '@/types/auth';
 
 const Login: React.FC = () => {
   const { login, switchToGuest, isLoading, error } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [credentials, setCredentials] = useState<LoginCredentials>({
     username: '',
     password: '',
@@ -81,7 +85,21 @@ const Login: React.FC = () => {
   };
 
   const handleGuestMode = () => {
+    // Switch to guest role with limited permissions
     switchToGuest();
+
+    // If user was redirected here from a route, try to go back if guest can access it
+    const fromPath = (location.state as any)?.from?.pathname as string | undefined;
+    const fallback = '/enhanced-attendance';
+
+    if (fromPath) {
+      const routeConfig = ROUTE_PERMISSIONS.find(route => fromPath.startsWith(route.path));
+      const destination = routeConfig && routeConfig.guestAllowed ? fromPath : fallback;
+      navigate(destination, { replace: true });
+    } else {
+      // Otherwise go to default guest page
+      navigate(fallback, { replace: true });
+    }
   };
 
   return (

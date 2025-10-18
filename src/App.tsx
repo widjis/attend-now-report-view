@@ -2,7 +2,7 @@
 import { ThemeProvider } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { muiTheme } from "./theme/muiTheme";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -24,15 +24,24 @@ const queryClient = new QueryClient();
 // App Routes Component (needs to be inside AuthProvider)
 const AppRoutes = () => {
   const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return null; // Loading is handled by ProtectedRoute
   }
 
-  if (!isAuthenticated) {
+  // Render Login outside of AppLayout for full-screen experience
+  if (location.pathname === '/login') {
     return (
       <Routes>
-        <Route path="/login" element={<Login />} />
+        <Route
+          path="/login"
+          element={isAuthenticated ? (
+            <Navigate to="/enhanced-attendance" replace />
+          ) : (
+            <Login />
+          )}
+        />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
@@ -41,11 +50,7 @@ const AppRoutes = () => {
   return (
     <AppLayout>
       <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route 
-          path="/login" 
-          element={<Navigate to="/dashboard" replace />} 
-        />
+        <Route path="/" element={<Navigate to="/enhanced-attendance" replace />} />
         
         {/* Guest-allowed routes */}
         <Route 
