@@ -1,263 +1,246 @@
 
-const { poolPromise } = require('../config/db');
+const { sql, poolPromise } = require('../config/db');
 const { buildFilterConditions, buildBaseCTEQueries } = require('../utils/queryBuilder');
-const { formatTime } = require('../utils/dateTimeFormatter');
 
-// Helper function to format time fields in attendance data
-const formatAttendanceData = (data) => {
-  if (!Array.isArray(data)) {
-    console.error('formatAttendanceData received non-array data:', typeof data);
-    return [];
-  }
-  
-  return data.map((row, index) => {
-    try {
-      // Helper function to safely create a date or handle time strings
-      const safeDate = (value, fieldName) => {
-        if (!value) return null;
-        
-        // If it's already a time string in HH:MM format, return it directly
-        if (typeof value === 'string' && /^\d{1,2}:\d{2}$/.test(value)) {
-          return value;
-        }
-        
-        try {
-          const date = new Date(value);
-          if (isNaN(date.getTime())) {
-            console.warn(`Invalid date in row ${index} for ${fieldName}:`, value);
-            return null;
-          }
-          return date;
-        } catch (err) {
-          console.error(`Error creating date for ${fieldName}:`, err.message);
-          return null;
-        }
-      };
-      
-      // Format Date field
-      let formattedDate = '';
-      if (row.Date) {
-        const dateObj = safeDate(row.Date, 'Date');
-        if (dateObj) {
-          try {
-            formattedDate = dateObj.toISOString().split('T')[0];
-          } catch (err) {
-            console.error(`Error formatting Date in row ${index}:`, err.message);
-          }
-        }
-      }
-      
-      return {
-        ...row,
-        Date: formattedDate,
-        // Format scheduled times to HH:MM to match frontend display
-        ScheduledClockIn: row.ScheduledClockIn ? formatTime(safeDate(row.ScheduledClockIn, 'ScheduledClockIn')) : '',
-        ScheduledClockOut: row.ScheduledClockOut ? formatTime(safeDate(row.ScheduledClockOut, 'ScheduledClockOut')) : '',
-        // Format actual times to HH:MM to match frontend display
-        ActualClockIn: row.ActualClockIn ? formatTime(safeDate(row.ActualClockIn, 'ActualClockIn')) : '',
-        ActualClockOut: row.ActualClockOut ? formatTime(safeDate(row.ActualClockOut, 'ActualClockOut')) : ''
-      };
-    } catch (err) {
-      console.error(`Error formatting row ${index}:`, err.message);
-      // Return a sanitized version of the row with empty strings for date fields
-      return {
-        ...row,
-        Date: '',
-        ScheduledClockIn: '',
-        ScheduledClockOut: '',
-        ActualClockIn: '',
-        ActualClockOut: ''
-      };
-    }
-  });
+// Shared SELECT fragment to ensure consistent fields
+const getSelectFragment = (toleranceMinutes = 15) => {
+  const inTimeExpr = `CONVERT(TIME, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME))))`;
+  const outTimeExpr = `CONVERT(TIME, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME))))`;
+  const classificationTolerance = Math.max(toleranceMinutes, 30);
+
+  return `
+  s.StaffNo,
+  s.Name,
+  s.Department,
+  s.Description,
+  -- Anchor both override and fallback schedules to TrDate using CAST to DATETIME
+  COALESCE(
+    DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME)),
+    DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME))
+  ) AS ScheduledClockIn,
+  COALESCE(
+    DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME)),
+    DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME))
+  ) AS ScheduledClockOut,
+  -- Derive ScheduleType using tolerant matching against common shift patterns
+  CASE 
+    WHEN ABS(DATEDIFF(MINUTE, ${inTimeExpr}, CAST('08:00:00' AS TIME))) <= ${classificationTolerance} 
+      AND ABS(DATEDIFF(MINUTE, ${outTimeExpr}, CAST('17:00:00' AS TIME))) <= ${classificationTolerance} THEN 'DayOff'
+    -- Normal Site variants: 7-17, 8-18, 8-16
+    WHEN ABS(DATEDIFF(MINUTE, ${inTimeExpr}, CAST('07:00:00' AS TIME))) <= ${classificationTolerance} 
+      AND ABS(DATEDIFF(MINUTE, ${outTimeExpr}, CAST('17:00:00' AS TIME))) <= ${classificationTolerance} THEN 'Normal_Site'
+    WHEN ABS(DATEDIFF(MINUTE, ${inTimeExpr}, CAST('08:00:00' AS TIME))) <= ${classificationTolerance} 
+      AND ABS(DATEDIFF(MINUTE, ${outTimeExpr}, CAST('18:00:00' AS TIME))) <= ${classificationTolerance} THEN 'Normal_Site'
+    WHEN ABS(DATEDIFF(MINUTE, ${inTimeExpr}, CAST('08:00:00' AS TIME))) <= ${classificationTolerance} 
+      AND ABS(DATEDIFF(MINUTE, ${outTimeExpr}, CAST('16:00:00' AS TIME))) <= ${classificationTolerance} THEN 'Normal_Site'
+    WHEN ABS(DATEDIFF(MINUTE, ${inTimeExpr}, CAST('07:00:00' AS TIME))) <= ${classificationTolerance} 
+      AND ABS(DATEDIFF(MINUTE, ${outTimeExpr}, CAST('15:00:00' AS TIME))) <= ${classificationTolerance} THEN 'ThreeShift_Morning'
+    WHEN ABS(DATEDIFF(MINUTE, ${inTimeExpr}, CAST('07:00:00' AS TIME))) <= ${classificationTolerance} 
+      AND ABS(DATEDIFF(MINUTE, ${outTimeExpr}, CAST('19:00:00' AS TIME))) <= ${classificationTolerance} THEN 'TwoShift_Day'
+    WHEN ABS(DATEDIFF(MINUTE, ${inTimeExpr}, CAST('19:00:00' AS TIME))) <= ${classificationTolerance} 
+      AND ABS(DATEDIFF(MINUTE, ${outTimeExpr}, CAST('07:00:00' AS TIME))) <= ${classificationTolerance} THEN 'TwoShift_Night'
+    WHEN ABS(DATEDIFF(MINUTE, ${inTimeExpr}, CAST('23:00:00' AS TIME))) <= ${classificationTolerance} 
+      AND ABS(DATEDIFF(MINUTE, ${outTimeExpr}, CAST('07:00:00' AS TIME))) <= ${classificationTolerance} THEN 'ThreeShift_Night'
+    WHEN ABS(DATEDIFF(MINUTE, ${inTimeExpr}, CAST('15:00:00' AS TIME))) <= ${classificationTolerance} 
+      AND ABS(DATEDIFF(MINUTE, ${outTimeExpr}, CAST('23:00:00' AS TIME))) <= ${classificationTolerance} THEN 'ThreeShift_Evening'
+    WHEN ABS(DATEDIFF(MINUTE, ${inTimeExpr}, CAST('15:00:00' AS TIME))) <= ${classificationTolerance} 
+      AND ABS(DATEDIFF(MINUTE, ${outTimeExpr}, CAST('07:00:00' AS TIME))) <= ${classificationTolerance} THEN 'Overnight_Other'
+    WHEN ABS(DATEDIFF(MINUTE, ${inTimeExpr}, CAST('16:00:00' AS TIME))) <= ${classificationTolerance} 
+      AND ABS(DATEDIFF(MINUTE, ${outTimeExpr}, CAST('00:00:00' AS TIME))) <= ${classificationTolerance} THEN 'ThreeShift_Evening'
+    WHEN ABS(DATEDIFF(MINUTE, ${inTimeExpr}, CAST('15:00:00' AS TIME))) <= ${classificationTolerance + 30} 
+      AND ABS(DATEDIFF(MINUTE, ${outTimeExpr}, CAST('03:00:00' AS TIME))) <= ${classificationTolerance + 30} THEN 'Evening_OT'
+    WHEN ABS(DATEDIFF(MINUTE, ${inTimeExpr}, CAST('16:00:00' AS TIME))) <= ${classificationTolerance + 30} 
+      AND ABS(DATEDIFF(MINUTE, ${outTimeExpr}, CAST('02:00:00' AS TIME))) <= ${classificationTolerance + 30} THEN 'Evening_OT'
+    -- Generic overnight fallback classification when none matched but out < in (cross-midnight)
+    WHEN (
+      DATEDIFF(MINUTE,
+        COALESCE(
+          DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME)),
+          DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME))
+        ),
+        COALESCE(
+          DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME)),
+          DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME))
+        )
+      ) + CASE WHEN ${outTimeExpr} < ${inTimeExpr} THEN 1440 ELSE 0 END BETWEEN 900 AND 1020
+    ) THEN 'Overnight_OT'
+      WHEN ${outTimeExpr} < ${inTimeExpr} THEN 'Overnight_Other'
+      ELSE 'Unknown'
+    END AS ScheduleType,
+  a.TrDate AS Date,
+  a.ActualClockIn,
+  a.ActualClockOut,
+  a.ClockInController,
+  a.ClockOutController,
+  CASE 
+    WHEN a.ActualClockIn IS NULL THEN 'Missing'
+    WHEN DATEDIFF(MINUTE, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME))), a.ActualClockIn) > ${toleranceMinutes} THEN 'Late'
+    WHEN DATEDIFF(MINUTE, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME))), a.ActualClockIn) < -${toleranceMinutes} THEN 'Early'
+    ELSE 'OnTime'
+  END AS ClockInStatus,
+  CASE 
+    WHEN a.ActualClockOut IS NULL THEN 'Missing'
+    WHEN ABS(DATEDIFF(MINUTE, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME))), a.ActualClockOut)) > 120 THEN 'Out of Range'
+    WHEN DATEDIFF(MINUTE, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME))), a.ActualClockOut) < -${toleranceMinutes} THEN 'Early'
+    WHEN DATEDIFF(MINUTE, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME))), a.ActualClockOut) > ${toleranceMinutes} THEN 'Late'
+    ELSE 'OnTime'
+  END AS ClockOutStatus
+`;
 };
 
-// Get enhanced attendance data with filters and pagination
-const getEnhancedAttendanceData = async (filters) => {
-  const toleranceMinutes = 15;
-  const { whereClause, queryParams } = buildFilterConditions(filters, toleranceMinutes);
-  const baseCTE = buildBaseCTEQueries(toleranceMinutes);
-  
+const getEnhancedAttendanceData = async ({ startDate, endDate, filters = {}, page = 1, limit = 50, toleranceMinutes = 15 }) => {
   const pool = await poolPromise;
-  const { page, pageSize } = filters;
-  const offset = (page - 1) * pageSize;
-  
-  // Count query with filters
+
+  const { whereClause, queryParams } = buildFilterConditions({ ...filters, startDate, endDate }, toleranceMinutes);
+  const baseCTE = buildBaseCTEQueries(toleranceMinutes);
+
+  const offset = (page - 1) * limit;
+
   const countQuery = `
     ${baseCTE}
-    ,
-    FilteredData AS (
-      SELECT 
-        s.StaffNo AS StaffNo,
-        s.Name AS Name,
-        s.Department AS Department,
-        COALESCE(a.Position, 'N/A') AS Position,
-        COALESCE(a.TrDate, CAST(@startDate AS DATE)) AS Date,
-        s.ScheduledClockIn,
-        s.ScheduledClockOut,
-        s.ScheduleType,
-        a.ActualClockIn,
-        a.ActualClockOut,
-        a.ClockInController,
-        a.ClockOutController
-      FROM ScheduleData s
-      LEFT JOIN AttendanceData a ON s.StaffNo = a.StaffNo AND a.TrDate BETWEEN @startDate AND @endDate
-      ${whereClause}
-    )
-    SELECT COUNT(*) AS total FROM FilteredData
+    SELECT COUNT(*) AS TotalCount
+    FROM ScheduleData s
+    LEFT JOIN AttendanceData a ON s.StaffNo = a.StaffNo
+    ${whereClause}
   `;
-  
-  // Data query with filters and pagination
+
   const dataQuery = `
     ${baseCTE}
-    ,
-    FilteredData AS (
-      SELECT 
-        s.StaffNo AS StaffNo,
-        s.Name AS Name,
-        s.Department AS Department,
-        COALESCE(a.Position, 'N/A') AS Position,
-        COALESCE(a.TrDate, CAST(@startDate AS DATE)) AS Date,
-        s.ScheduledClockIn,
-        s.ScheduledClockOut,
-        s.ScheduleType,
-        a.ActualClockIn,
-        a.ActualClockOut,
-        a.ClockInController,
-        a.ClockOutController,
-        CASE
-          WHEN a.ActualClockIn IS NULL THEN 'Missing'
-          WHEN DATEPART(HOUR, a.ActualClockIn) < DATEPART(HOUR, s.ScheduledClockIn) THEN 'Early'
-          WHEN DATEPART(HOUR, a.ActualClockIn) = DATEPART(HOUR, s.ScheduledClockIn) 
-            AND DATEPART(MINUTE, a.ActualClockIn) <= DATEPART(MINUTE, s.ScheduledClockIn) + ${toleranceMinutes} THEN 'OnTime'
-          ELSE 'Late'
-        END AS ClockInStatus,
-        CASE
-          WHEN a.ActualClockOut IS NULL THEN 'Missing'
-          -- Late: After scheduled time
-          WHEN DATEPART(HOUR, a.ActualClockOut) > DATEPART(HOUR, s.ScheduledClockOut) THEN 'Late'
-          -- OnTime: Within tolerance window (15 minutes before to any time after)
-          WHEN DATEPART(HOUR, a.ActualClockOut) = DATEPART(HOUR, s.ScheduledClockOut) 
-            AND DATEPART(MINUTE, a.ActualClockOut) >= DATEPART(MINUTE, s.ScheduledClockOut) - ${toleranceMinutes} THEN 'OnTime'
-          -- Out of Range: More than 2 hours early (severe violation)
-          WHEN a.ActualClockOut IS NOT NULL AND DATEDIFF(MINUTE, a.ActualClockOut, s.ScheduledClockOut) > 120 THEN 'Out of Range'
-          -- Early: Within 2 hours but outside tolerance
-          ELSE 'Early'
-        END AS ClockOutStatus
-      FROM ScheduleData s
-      LEFT JOIN AttendanceData a ON s.StaffNo = a.StaffNo AND a.TrDate BETWEEN @startDate AND @endDate
-      ${whereClause}
-    )
-    SELECT * FROM FilteredData
-    ORDER BY Date DESC, Name
-    OFFSET ${offset} ROWS
-    FETCH NEXT ${pageSize} ROWS ONLY
+    SELECT ${getSelectFragment(toleranceMinutes)}
+    FROM ScheduleData s
+    LEFT JOIN AttendanceData a ON s.StaffNo = a.StaffNo
+    ${whereClause}
+    ORDER BY a.TrDate DESC, s.StaffNo ASC
+    OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY;
   `;
-  
-  // Execute the count query
-  let request = pool.request();
-  queryParams.forEach(param => {
-    request = request.input(param.name, param.value);
-  });
-  
-  const countResult = await request.query(countQuery);
-  const total = countResult.recordset[0].total;
-  
-  // Reset request for data query
-  request = pool.request();
-  queryParams.forEach(param => {
-    request = request.input(param.name, param.value);
-  });
-  
-  // Execute the data query
+
+  const request = pool.request();
+  request.input('startDate', sql.DateTime, startDate);
+  request.input('endDate', sql.DateTime, endDate);
+  for (const p of queryParams.filter(p => p.name !== 'startDate' && p.name !== 'endDate')) {
+    // Infer type based on param name; use NVARCHAR for strings by default
+    const type = (p.name.toLowerCase().includes('date')) ? sql.DateTime : sql.NVarChar;
+    request.input(p.name, type, p.value);
+  }
+
+  const totalCountResult = await request.query(countQuery);
+  const totalCount = totalCountResult.recordset[0]?.TotalCount || 0;
+
   const dataResult = await request.query(dataQuery);
-  
-  // Format the time fields before returning
-  const formattedData = formatAttendanceData(dataResult.recordset);
-  
-  console.log('Service returned data sample:', JSON.stringify(formattedData.slice(0, 2), null, 2));
-  
-  return {
-    data: formattedData,
-    total,
-    page: parseInt(page),
-    pageSize: parseInt(pageSize),
-    totalPages: Math.ceil(total / pageSize)
-  };
+  const records = dataResult.recordset.map((row) => ({
+    StaffNo: row.StaffNo,
+    Name: row.Name,
+    Department: row.Department,
+    Description: row.Description,
+    ScheduledClockIn: row.ScheduledClockIn,
+    ScheduledClockOut: row.ScheduledClockOut,
+    ScheduleType: row.ScheduleType,
+    Date: row.Date,
+    ActualClockIn: row.ActualClockIn,
+    ActualClockOut: row.ActualClockOut,
+    ClockInController: row.ClockInController,
+    ClockOutController: row.ClockOutController,
+    ClockInStatus: row.ClockInStatus,
+    ClockOutStatus: row.ClockOutStatus
+  }));
+
+  return { records, totalCount };
 };
 
-// Get enhanced attendance data for export (no pagination)
-const getEnhancedAttendanceForExport = async (filters) => {
-  console.log('Export service called with filters:', filters);
-  
-  const toleranceMinutes = 15;
-  const { whereClause, queryParams } = buildFilterConditions(filters, toleranceMinutes);
-  const baseCTE = buildBaseCTEQueries(toleranceMinutes);
-  
+const getEnhancedAttendanceForExport = async ({ startDate, endDate, filters = {}, toleranceMinutes = 15 }) => {
   const pool = await poolPromise;
-  
-  // Use the same query structure as getEnhancedAttendanceData but without pagination
-  const dataQuery = `
+
+  const { whereClause, queryParams } = buildFilterConditions({ ...filters, startDate, endDate }, toleranceMinutes);
+  const baseCTE = buildBaseCTEQueries(toleranceMinutes);
+
+  const exportQuery = `
     ${baseCTE}
-    ,
-    FilteredData AS (
-      SELECT 
-        s.StaffNo AS StaffNo,
-        s.Name AS Name,
-        s.Department AS Department,
-        COALESCE(a.Position, 'N/A') AS Position,
-        COALESCE(a.TrDate, CAST(@startDate AS DATE)) AS Date,
-        s.ScheduledClockIn,
-        s.ScheduledClockOut,
-        s.ScheduleType,
-        a.ActualClockIn,
-        a.ActualClockOut,
-        a.ClockInController,
-        a.ClockOutController,
-        CASE
-          WHEN a.ActualClockIn IS NULL THEN 'Missing'
-          WHEN DATEPART(HOUR, a.ActualClockIn) < DATEPART(HOUR, s.ScheduledClockIn) THEN 'Early'
-          WHEN DATEPART(HOUR, a.ActualClockIn) = DATEPART(HOUR, s.ScheduledClockIn) 
-            AND DATEPART(MINUTE, a.ActualClockIn) <= DATEPART(MINUTE, s.ScheduledClockIn) + ${toleranceMinutes} THEN 'OnTime'
-          ELSE 'Late'
-        END AS ClockInStatus,
-        CASE
-          WHEN a.ActualClockOut IS NULL THEN 'Missing'
-          -- Late: After scheduled time
-          WHEN DATEPART(HOUR, a.ActualClockOut) > DATEPART(HOUR, s.ScheduledClockOut) THEN 'Late'
-          -- OnTime: Within tolerance window (15 minutes before to any time after)
-          WHEN DATEPART(HOUR, a.ActualClockOut) = DATEPART(HOUR, s.ScheduledClockOut) 
-            AND DATEPART(MINUTE, a.ActualClockOut) >= DATEPART(MINUTE, s.ScheduledClockOut) - ${toleranceMinutes} THEN 'OnTime'
-          -- Out of Range: More than 2 hours early (severe violation)
-          WHEN a.ActualClockOut IS NOT NULL AND DATEDIFF(MINUTE, a.ActualClockOut, s.ScheduledClockOut) > 120 THEN 'Out of Range'
-          -- Early: Within 2 hours but outside tolerance
-          ELSE 'Early'
-        END AS ClockOutStatus
-      FROM ScheduleData s
-      LEFT JOIN AttendanceData a ON s.StaffNo = a.StaffNo AND a.TrDate BETWEEN @startDate AND @endDate
-      ${whereClause}
-    )
-    SELECT * FROM FilteredData
-    ORDER BY Date DESC, Name
+    SELECT ${getSelectFragment(toleranceMinutes)}
+    FROM ScheduleData s
+    LEFT JOIN AttendanceData a ON s.StaffNo = a.StaffNo
+    ${whereClause}
+    ORDER BY a.TrDate DESC, s.StaffNo ASC
   `;
-  
-  let request = pool.request();
-  queryParams.forEach(param => {
-    request = request.input(param.name, param.value);
-  });
-  
-  console.log('Executing export query...');
-  const dataResult = await request.query(dataQuery);
-  
-  // Format the time fields before returning
-  const formattedData = formatAttendanceData(dataResult.recordset);
-  
-  console.log('Export service raw result sample:', JSON.stringify(formattedData.slice(0, 2), null, 2));
-  
-  return formattedData;
+
+  const request = pool.request();
+  request.input('startDate', sql.DateTime, startDate);
+  request.input('endDate', sql.DateTime, endDate);
+  for (const p of queryParams.filter(p => p.name !== 'startDate' && p.name !== 'endDate')) {
+    const type = (p.name.toLowerCase().includes('date')) ? sql.DateTime : sql.NVarChar;
+    request.input(p.name, type, p.value);
+  }
+
+  const exportResult = await request.query(exportQuery);
+  const records = exportResult.recordset.map((row) => ({
+    StaffNo: row.StaffNo,
+    Name: row.Name,
+    Department: row.Department,
+    Description: row.Description,
+    ScheduledClockIn: row.ScheduledClockIn,
+    ScheduledClockOut: row.ScheduledClockOut,
+    ScheduleType: row.ScheduleType,
+    Date: row.Date,
+    ActualClockIn: row.ActualClockIn,
+    ActualClockOut: row.ActualClockOut,
+    ClockInController: row.ClockInController,
+    ClockOutController: row.ClockOutController,
+    ClockInStatus: row.ClockInStatus,
+    ClockOutStatus: row.ClockOutStatus
+  }));
+
+  return records;
+};
+
+// New: get distinct users whose derived ScheduleType is Evening_OT within a date range
+const getEveningOtUsers = async ({ startDate, endDate, toleranceMinutes = 15 }) => {
+  const pool = await poolPromise;
+  const baseCTE = buildBaseCTEQueries(toleranceMinutes);
+
+  const inTimeExpr = `CONVERT(TIME, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME))))`;
+  const outTimeExpr = `CONVERT(TIME, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME))))`;
+  const classificationTolerance = Math.max(toleranceMinutes, 30);
+
+  // Build an inner SELECT with classification, then filter in the outer WHERE
+  const query = `
+    ${baseCTE}
+    SELECT DISTINCT StaffNo, Name, Department, Description
+    FROM (
+      SELECT 
+        s.StaffNo,
+        s.Name,
+        s.Department,
+        s.Description,
+        a.TrDate,
+        CASE 
+          WHEN ABS(DATEDIFF(MINUTE, ${inTimeExpr}, CAST('15:00:00' AS TIME))) <= ${classificationTolerance + 30} 
+            AND ABS(DATEDIFF(MINUTE, ${outTimeExpr}, CAST('03:00:00' AS TIME))) <= ${classificationTolerance + 30} THEN 'Evening_OT'
+          WHEN ABS(DATEDIFF(MINUTE, ${inTimeExpr}, CAST('16:00:00' AS TIME))) <= ${classificationTolerance + 30} 
+            AND ABS(DATEDIFF(MINUTE, ${outTimeExpr}, CAST('02:00:00' AS TIME))) <= ${classificationTolerance + 30} THEN 'Evening_OT'
+          ELSE 'Other'
+        END AS ScheduleType
+      FROM ScheduleData s
+      LEFT JOIN AttendanceData a ON s.StaffNo = a.StaffNo
+      WHERE a.TrDate BETWEEN @startDate AND @endDate
+    ) t
+    WHERE t.ScheduleType = 'Evening_OT'
+    ORDER BY Name, StaffNo
+  `;
+
+  const request = pool.request();
+  request.input('startDate', sql.DateTime, startDate);
+  request.input('endDate', sql.DateTime, endDate);
+
+  const result = await request.query(query);
+  return result.recordset.map((row) => ({
+    StaffNo: row.StaffNo,
+    Name: row.Name,
+    Department: row.Department,
+    Description: row.Description,
+  }));
 };
 
 module.exports = {
   getEnhancedAttendanceData,
-  getEnhancedAttendanceForExport
+  getEnhancedAttendanceForExport,
+  getEveningOtUsers
 };

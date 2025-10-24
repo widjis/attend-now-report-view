@@ -189,12 +189,18 @@ const EnhancedAttendanceTable: React.FC<EnhancedAttendanceTableProps> = ({
     
     const labels = {
       Fixed: "Fixed 7-17",
+      Normal_Site: "Normal Site",
       TwoShift_Day: "2-Shift Day",
       TwoShift_Night: "2-Shift Night",
       ThreeShift_Morning: "3-Shift Morning",
       ThreeShift_Afternoon: "3-Shift Afternoon",
       ThreeShift_Night: "3-Shift Night",
-    };
+      ThreeShift_Evening: "3-Shift Evening",
+      DayOff: "Day Off",
+      Admin_Day: "Admin Day",
+      Overnight_Other: "Overnight (Other)",
+      Overnight_OT: "Overnight OT",
+    } as const;
     
     return (
       <ScheduleChip 

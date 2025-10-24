@@ -13,7 +13,7 @@ export interface EnhancedAttendanceRecord {
   Date: string;
   ScheduledClockIn: string | null;
   ScheduledClockOut: string | null;
-  ScheduleType: 'Fixed' | 'TwoShift_Day' | 'TwoShift_Night' | 'ThreeShift_Morning' | 'ThreeShift_Afternoon' | 'ThreeShift_Night' | 'Unknown';
+  ScheduleType: 'Fixed' | 'Normal_Site' | 'TwoShift_Day' | 'TwoShift_Night' | 'ThreeShift_Morning' | 'ThreeShift_Afternoon' | 'ThreeShift_Night' | 'ThreeShift_Evening' | 'DayOff' | 'Admin_Day' | 'Overnight_Other' | 'Overnight_OT' | 'Unknown';
   
   // Actual attendance
   ActualClockIn: string | null;
@@ -39,7 +39,7 @@ export interface EnhancedAttendanceFilters {
   endDate: string;
   search?: string;
   department?: string;
-  scheduleType?: 'Fixed' | 'TwoShift_Day' | 'TwoShift_Night' | 'ThreeShift_Morning' | 'ThreeShift_Afternoon' | 'ThreeShift_Night' | 'All';
+  scheduleType?: 'Fixed' | 'Normal_Site' | 'TwoShift_Day' | 'TwoShift_Night' | 'ThreeShift_Morning' | 'ThreeShift_Afternoon' | 'ThreeShift_Night' | 'ThreeShift_Evening' | 'DayOff' | 'Admin_Day' | 'Overnight_Other' | 'Overnight_OT' | 'All';
   clockInStatus?: 'Early' | 'OnTime' | 'Late' | 'Out of Range' | 'Missing' | 'All';
   clockOutStatus?: 'Early' | 'OnTime' | 'Late' | 'Out of Range' | 'Missing' | 'All';
   page: number;

@@ -6,12 +6,12 @@ exports.getFilterOptions = async (req, res, next) => {
   try {
     const pool = await poolPromise;
     
-    // Get distinct departments
+    // Get distinct departments from MTIUsers table
     const departmentsQuery = `
-      SELECT DISTINCT Department
-      FROM tblAttendanceReport
-      WHERE Department IS NOT NULL AND Department <> ''
-      ORDER BY Department
+      SELECT DISTINCT department
+      FROM MTIUsers
+      WHERE department IS NOT NULL AND department <> ''
+      ORDER BY department
     `;
     const departmentsResult = await pool.request().query(departmentsQuery);
     
@@ -38,8 +38,8 @@ exports.getFilterOptions = async (req, res, next) => {
       departments: [
         { value: 'all', label: 'All Departments' },
         ...departmentsResult.recordset.map(item => ({
-          value: item.Department,
-          label: item.Department
+          value: item.department,
+          label: item.department
         }))
       ],
       companies: [

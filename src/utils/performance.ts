@@ -16,12 +16,16 @@ export const useFilterOptions = () => {
   return useMemo(() => ({
     scheduleTypes: [
       { value: "", label: "All Schedule Types" },
-      { value: "Fixed", label: "Fixed 7-17" },
+      { value: "Normal_Site", label: "Normal Site" },
       { value: "TwoShift_Day", label: "2-Shift Day" },
       { value: "TwoShift_Night", label: "2-Shift Night" },
       { value: "ThreeShift_Morning", label: "3-Shift Morning" },
       { value: "ThreeShift_Afternoon", label: "3-Shift Afternoon" },
       { value: "ThreeShift_Night", label: "3-Shift Night" },
+      { value: "ThreeShift_Evening", label: "3-Shift Evening" },
+      { value: "DayOff", label: "Day Off" },
+      { value: "Overnight_Other", label: "Overnight (Other)" },
+      { value: "Overnight_OT", label: "Overnight OT" },
     ],
     statuses: [
       { value: "", label: "All Statuses" },

@@ -211,6 +211,10 @@ export const scheduleColors = {
     main: '#9c27b0',
     background: '#f3e5f5',
   },
+  Normal_Site: {
+    main: '#9c27b0',
+    background: '#f3e5f5',
+  },
   TwoShift_Day: {
     main: '#1976d2',
     background: '#e3f2fd',
@@ -229,6 +233,26 @@ export const scheduleColors = {
   },
   ThreeShift_Night: {
     main: '#d32f2f',
+    background: '#ffebee',
+  },
+  ThreeShift_Evening: {
+    main: '#ffb300',
+    background: '#fff8e1',
+  },
+  DayOff: {
+    main: '#00897b',
+    background: '#e0f2f1',
+  },
+  Admin_Day: {
+    main: '#546e7a',
+    background: '#eceff1',
+  },
+  Overnight_Other: {
+    main: '#512da8',
+    background: '#ede7f6',
+  },
+  Overnight_OT: {
+    main: '#c62828',
     background: '#ffebee',
   },
 };

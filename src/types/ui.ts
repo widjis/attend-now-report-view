@@ -1,7 +1,7 @@
 // UI-specific types for better type safety and reusability
 import { Dayjs } from "dayjs";
 
-export type ScheduleTypeOption = "" | "Fixed" | "TwoShift_Day" | "TwoShift_Night" | "ThreeShift_Morning" | "ThreeShift_Afternoon" | "ThreeShift_Night";
+export type ScheduleTypeOption = "" | "Normal_Site" | "TwoShift_Day" | "TwoShift_Night" | "ThreeShift_Morning" | "ThreeShift_Afternoon" | "ThreeShift_Night" | "ThreeShift_Evening" | "DayOff" | "Overnight_Other" | "Overnight_OT";
 
 export type StatusOption = "" | "Early" | "OnTime" | "Late" | "Out of Range" | "Missing";
 

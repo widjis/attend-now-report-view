@@ -1,4 +1,4 @@
-const { getEnhancedAttendanceData, getEnhancedAttendanceForExport } = require('../services/enhancedAttendanceService');
+const { getEnhancedAttendanceData, getEnhancedAttendanceForExport, getEveningOtUsers } = require('../services/enhancedAttendanceService');
 const { exportToCsv } = require('../services/csvExportService');
 const { exportToPdf } = require('../services/pdfExportService');
 const { exportToXlsx } = require('../services/xlsxExportService');
@@ -24,29 +24,58 @@ exports.getEnhancedAttendanceData = async (req, res, next) => {
       return res.status(400).json({ error: 'Start date and end date are required' });
     }
 
-    const filters = {
-      startDate,
-      endDate,
+    const coreFilters = {
       search,
       department,
       scheduleType,
       clockInStatus,
       clockOutStatus,
-      page,
-      pageSize
     };
 
-    console.log('Frontend request filters:', filters);
-    const result = await getEnhancedAttendanceData(filters);
-    console.log('Frontend response data sample:', JSON.stringify(result.data.slice(0, 2), null, 2));
-    
-    res.json(result);
+    const pageNum = parseInt(page);
+    const pageSizeNum = parseInt(pageSize);
+
+    console.log('EnhancedAttendanceData request:', { startDate, endDate, coreFilters, pageNum, pageSizeNum });
+
+    const { records, totalCount } = await getEnhancedAttendanceData({
+      startDate,
+      endDate,
+      filters: coreFilters,
+      page: pageNum,
+      limit: pageSizeNum,
+    });
+
+    console.log('EnhancedAttendanceData sample:', JSON.stringify(records.slice(0, 2), null, 2));
+
+    return res.json({
+      data: records,
+      total: totalCount,
+      page: pageNum,
+      pageSize: pageSizeNum,
+      totalPages: Math.ceil(totalCount / pageSizeNum),
+    });
   } catch (err) {
     console.error('Error fetching enhanced attendance data:', err);
     res.status(500).json({ 
       error: 'Internal Server Error',
       message: err.message
     });
+  }
+};
+
+// New: Get distinct users with Evening_OT classification, including MTIUsers.description
+exports.getEveningOtUsers = async (req, res, next) => {
+  try {
+    const { startDate, endDate } = req.query;
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: 'Start date and end date are required' });
+    }
+
+    const users = await getEveningOtUsers({ startDate, endDate });
+    return res.json({ data: users, total: users.length });
+  } catch (err) {
+    console.error('Error fetching Evening_OT users:', err);
+    res.status(500).json({ error: 'Internal Server Error', message: err.message });
   }
 };
 
@@ -65,12 +94,7 @@ exports.exportEnhancedAttendanceToCsv = async (req, res, next) => {
       clockOutStatus
     } = req.query;
 
-    // Validate date parameters but allow them to be optional
-    // The exportToCsv function will handle missing dates with defaults
-    
-    const filters = {
-      startDate,
-      endDate,
+    const coreFilters = {
       search,
       department,
       scheduleType,
@@ -78,10 +102,10 @@ exports.exportEnhancedAttendanceToCsv = async (req, res, next) => {
       clockOutStatus
     };
 
-    console.log('CSV Export filters:', filters);
+    console.log('CSV Export filters:', { startDate, endDate, coreFilters });
     
     try {
-      const data = await getEnhancedAttendanceForExport(filters);
+      const data = await getEnhancedAttendanceForExport({ startDate, endDate, filters: coreFilters });
       
       if (!data || !Array.isArray(data)) {
         console.error('CSV Export - Invalid data returned from service:', typeof data);
@@ -128,12 +152,7 @@ exports.exportEnhancedAttendanceToPdf = async (req, res, next) => {
       clockOutStatus
     } = req.query;
 
-    // Validate date parameters but allow them to be optional
-    // The exportToPdf function will handle missing dates with defaults
-    
-    const filters = {
-      startDate,
-      endDate,
+    const coreFilters = {
       search,
       department,
       scheduleType,
@@ -141,10 +160,10 @@ exports.exportEnhancedAttendanceToPdf = async (req, res, next) => {
       clockOutStatus
     };
 
-    console.log('PDF Export filters:', filters);
+    console.log('PDF Export filters:', { startDate, endDate, coreFilters });
     
     try {
-      const data = await getEnhancedAttendanceForExport(filters);
+      const data = await getEnhancedAttendanceForExport({ startDate, endDate, filters: coreFilters });
       
       if (!data || !Array.isArray(data)) {
         console.error('PDF Export - Invalid data returned from service:', typeof data);
@@ -207,9 +226,7 @@ exports.exportEnhancedAttendanceToXlsx = async (req, res, next) => {
       return res.status(400).json({ error: 'Start date cannot be after end date' });
     }
 
-    const filters = {
-      startDate,
-      endDate,
+    const coreFilters = {
       search,
       department,
       scheduleType,
@@ -217,9 +234,9 @@ exports.exportEnhancedAttendanceToXlsx = async (req, res, next) => {
       clockOutStatus
     };
 
-    console.log('XLSX Export filters:', filters);
+    console.log('XLSX Export filters:', { startDate, endDate, coreFilters });
     
-    const data = await getEnhancedAttendanceForExport(filters);
+    const data = await getEnhancedAttendanceForExport({ startDate, endDate, filters: coreFilters });
     
     if (!data) {
       console.log('XLSX Export - No data returned from service');

@@ -178,6 +178,8 @@ const EnhancedAttendanceTable: React.FC<EnhancedAttendanceTableProps> = ({
     switch (type) {
       case "Fixed":
         return <Badge className="bg-purple-100 text-purple-800 border-purple-200">Fixed 7-17</Badge>;
+      case "Normal_Site":
+        return <Badge className="bg-purple-100 text-purple-800 border-purple-200">Normal Site</Badge>;
       case "TwoShift_Day":
         return <Badge className="bg-blue-100 text-blue-800 border-blue-200">2-Shift Day</Badge>;
       case "TwoShift_Night":
@@ -188,6 +190,16 @@ const EnhancedAttendanceTable: React.FC<EnhancedAttendanceTableProps> = ({
         return <Badge className="bg-orange-100 text-orange-800 border-orange-200">3-Shift Afternoon</Badge>;
       case "ThreeShift_Night":
         return <Badge className="bg-red-100 text-red-800 border-red-200">3-Shift Night</Badge>;
+      case "ThreeShift_Evening":
+        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">3-Shift Evening</Badge>;
+      case "DayOff":
+        return <Badge className="bg-teal-100 text-teal-800 border-teal-200">Day Off</Badge>;
+      case "Admin_Day":
+        return <Badge className="bg-slate-100 text-slate-800 border-slate-200">Admin Day</Badge>;
+      case "Overnight_Other":
+        return <Badge className="bg-purple-200 text-purple-900 border-purple-300">Overnight (Other)</Badge>;
+      case "Overnight_OT":
+        return <Badge className="bg-red-100 text-red-800 border-red-200">Overnight OT</Badge>;
       default:
         return <Badge variant="outline">{type}</Badge>;
     }
