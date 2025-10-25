@@ -49,6 +49,44 @@ The Schedule page table (`TimeScheduleTable.tsx`) was using Shadcn UI components
 - Responsive behavior maintained ✓
 - Material-UI consistency achieved ✓
 
+## 2025-10-25 - Docker Frontend Build Fix
+
+### Issue Identified
+Docker build for frontend was failing with error:
+```
+ERROR [frontend builder  9/11] COPY postcss.config.js ./: 
+failed to solve: failed to compute cache key
+```
+
+The `Dockerfile.frontend` was trying to copy `postcss.config.js` but the file didn't exist in the project root.
+
+### Root Cause
+- **Missing Configuration**: The project uses TailwindCSS but was missing the required PostCSS configuration file
+- **Docker Build Process**: The Dockerfile expects `postcss.config.js` to process TailwindCSS during the build stage
+- **Build Dependencies**: PostCSS is required for TailwindCSS compilation in production builds
+
+### Solution Implemented
+Created `postcss.config.js` with standard TailwindCSS configuration:
+
+```javascript
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+```
+
+### Technical Details
+- **PostCSS Configuration**: Uses ES module syntax for modern Node.js compatibility
+- **Plugin Setup**: Includes `tailwindcss` for utility class processing and `autoprefixer` for browser compatibility
+- **Build Integration**: Enables proper CSS processing during Docker build stage
+
+### Verification
+- PostCSS configuration file created ✓
+- Docker build dependencies resolved ✓
+- TailwindCSS processing enabled for production builds ✓
+
 ## 2025-10-25 - SQL Server Time Field Timezone Fix
 
 ### Issue Identified
