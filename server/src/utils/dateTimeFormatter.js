@@ -9,12 +9,19 @@ const formatTime = (timeValue) => {
       return timeValue;
     }
     
+    // Handle SQL Server time(7) format: HH:MM:SS.nnnnnnn
+    if (typeof timeValue === 'string' && /^\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(timeValue)) {
+      return timeValue.substring(0, 5); // Extract just HH:MM
+    }
+    
     // If it's a string in HH:MM:SS format, extract HH:MM
     if (typeof timeValue === 'string' && timeValue.includes(':')) {
       try {
         const timeParts = timeValue.split(':');
         if (timeParts.length >= 2) {
-          return `${timeParts[0]}:${timeParts[1]}`;
+          const hours = timeParts[0].padStart(2, '0');
+          const minutes = timeParts[1];
+          return `${hours}:${minutes}`;
         }
         return timeValue;
       } catch (err) {

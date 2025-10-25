@@ -96,22 +96,70 @@ const getEnhancedAttendanceData = async ({ startDate, endDate, filters = {}, pag
 
   const offset = (page - 1) * limit;
 
+  // Build additional WHERE conditions for computed fields
+  let additionalWhereConditions = [];
+  
+  // Check if we need to filter by computed fields
+  const scheduleTypeParam = queryParams.find(p => p.name === 'ScheduleType');
+  const clockInStatusParam = queryParams.find(p => p.name === 'ClockInStatus');
+  const clockOutStatusParam = queryParams.find(p => p.name === 'ClockOutStatus');
+  
+  if (scheduleTypeParam) {
+    additionalWhereConditions.push(`ScheduleType = @ScheduleType`);
+  }
+  if (clockInStatusParam) {
+    additionalWhereConditions.push(`ClockInStatus = @ClockInStatus`);
+  }
+  if (clockOutStatusParam) {
+    additionalWhereConditions.push(`ClockOutStatus = @ClockOutStatus`);
+  }
+
+  const additionalWhereClause = additionalWhereConditions.length > 0 
+    ? `WHERE ${additionalWhereConditions.join(' AND ')}` 
+    : '';
+
   const countQuery = `
     ${baseCTE}
+    ${additionalWhereConditions.length > 0 ? `
+    , FilteredData AS (
+      SELECT ${getSelectFragment(toleranceMinutes)}
+      FROM ScheduleData s
+      LEFT JOIN AttendanceData a ON s.StaffNo = a.StaffNo
+      ${whereClause}
+    )
+    SELECT COUNT(*) AS TotalCount
+    FROM FilteredData
+    ${additionalWhereClause}
+    ` : `
     SELECT COUNT(*) AS TotalCount
     FROM ScheduleData s
     LEFT JOIN AttendanceData a ON s.StaffNo = a.StaffNo
     ${whereClause}
+    `}
   `;
 
   const dataQuery = `
     ${baseCTE}
+    ${additionalWhereConditions.length > 0 ? `
+    , FilteredData AS (
+      SELECT ${getSelectFragment(toleranceMinutes)}
+      FROM ScheduleData s
+      LEFT JOIN AttendanceData a ON s.StaffNo = a.StaffNo
+      ${whereClause}
+    )
+    SELECT *
+    FROM FilteredData
+    ${additionalWhereClause}
+    ORDER BY Date DESC, StaffNo ASC
+    OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY;
+    ` : `
     SELECT ${getSelectFragment(toleranceMinutes)}
     FROM ScheduleData s
     LEFT JOIN AttendanceData a ON s.StaffNo = a.StaffNo
     ${whereClause}
     ORDER BY a.TrDate DESC, s.StaffNo ASC
     OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY;
+    `}
   `;
 
   const request = pool.request();

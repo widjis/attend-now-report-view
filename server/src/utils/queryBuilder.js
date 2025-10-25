@@ -1,5 +1,5 @@
 
-const buildFilterConditions = ({ StaffNo, Department, Position, startDate, endDate, search }, toleranceMinutes = 15) => {
+const buildFilterConditions = ({ StaffNo, Department, department, Position, startDate, endDate, search, scheduleType, clockInStatus, clockOutStatus, cardType }, toleranceMinutes = 15) => {
   const params = [];
   let whereClause = 'WHERE a.TrDate BETWEEN @startDate AND @endDate';
 
@@ -7,16 +7,44 @@ const buildFilterConditions = ({ StaffNo, Department, Position, startDate, endDa
     params.push({ name: 'StaffNo', value: StaffNo });
     whereClause += ' AND s.StaffNo = @StaffNo';
   }
-  if (Department) {
-    params.push({ name: 'Department', value: Department });
+  
+  // Handle both uppercase and lowercase department parameter
+  const deptFilter = Department || department;
+  if (deptFilter && deptFilter !== '' && deptFilter !== 'all') {
+    params.push({ name: 'Department', value: deptFilter });
     whereClause += ' AND s.Department = @Department';
   }
+  
   // Position column not reliable across environments; skip filtering by Position for now
 
   // Free-text search: match StaffNo exactly OR Name contains
-  if (search) {
+  if (search && search !== '') {
     params.push({ name: 'Search', value: search });
     whereClause += " AND (s.StaffNo = @Search OR s.Name LIKE '%' + @Search + '%')";
+  }
+
+  // Schedule Type filter - this will be applied after the CTE using HAVING or subquery
+  if (scheduleType && scheduleType !== '' && scheduleType !== 'all') {
+    params.push({ name: 'ScheduleType', value: scheduleType });
+    // Note: ScheduleType filtering will be handled in the main query since it's computed
+  }
+
+  // Clock In Status filter
+  if (clockInStatus && clockInStatus !== '' && clockInStatus !== 'all') {
+    params.push({ name: 'ClockInStatus', value: clockInStatus });
+    // Note: ClockInStatus filtering will be handled in the main query since it's computed
+  }
+
+  // Clock Out Status filter
+  if (clockOutStatus && clockOutStatus !== '' && clockOutStatus !== 'all') {
+    params.push({ name: 'ClockOutStatus', value: clockOutStatus });
+    // Note: ClockOutStatus filtering will be handled in the main query since it's computed
+  }
+
+  // Card Type filter - need to join with CardDB or similar table
+  if (cardType && cardType !== '' && cardType !== 'all') {
+    params.push({ name: 'CardType', value: cardType });
+    // Note: CardType filtering will need to be implemented based on available schema
   }
 
   return { whereClause, queryParams: params };

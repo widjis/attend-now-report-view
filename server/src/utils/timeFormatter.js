@@ -15,23 +15,37 @@ function formatSQLTime(timeValue) {
   
   try {
     // If it's already a string in HH:MM format, return as is
-    if (typeof timeValue === 'string' && /^\d{2}:\d{2}(:\d{2})?$/.test(timeValue)) {
-      return timeValue.substring(0, 5); // Return just HH:MM
+    if (typeof timeValue === 'string' && /^\d{2}:\d{2}$/.test(timeValue)) {
+      return timeValue;
     }
     
-    // If it's a Date object (from SQL Server time type)
+    // Handle SQL Server time(7) format: HH:MM:SS.nnnnnnn
+    if (typeof timeValue === 'string' && /^\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(timeValue)) {
+      return timeValue.substring(0, 5); // Extract just HH:MM
+    }
+    
+    // If it's a Date object (from SQL Server time type) - use UTC to avoid timezone conversion
     if (timeValue instanceof Date) {
-      const hours = timeValue.getHours().toString().padStart(2, '0');
-      const minutes = timeValue.getMinutes().toString().padStart(2, '0');
+      const hours = timeValue.getUTCHours().toString().padStart(2, '0');
+      const minutes = timeValue.getUTCMinutes().toString().padStart(2, '0');
       return `${hours}:${minutes}`;
     }
     
-    // If it's a string that can be parsed as a date
+    // If it's a string that might contain time information
     if (typeof timeValue === 'string') {
+      // Try to extract time pattern from string
+      const timeMatch = timeValue.match(/(\d{1,2}):(\d{2})/);
+      if (timeMatch) {
+        const hours = timeMatch[1].padStart(2, '0');
+        const minutes = timeMatch[2];
+        return `${hours}:${minutes}`;
+      }
+      
+      // Last resort: try parsing as date but use UTC
       const date = new Date(timeValue);
       if (!isNaN(date.getTime())) {
-        const hours = date.getHours().toString().padStart(2, '0');
-        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const hours = date.getUTCHours().toString().padStart(2, '0');
+        const minutes = date.getUTCMinutes().toString().padStart(2, '0');
         return `${hours}:${minutes}`;
       }
     }

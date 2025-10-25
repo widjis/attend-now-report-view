@@ -1,5 +1,88 @@
 # Development Journal
 
+## 2025-01-25 - Enhanced Attendance Report Filter Bug Fixes
+
+### Issues Fixed
+- **Backend Filter Processing**: Fixed parameter casing mismatch between frontend (camelCase) and backend (snake_case)
+- **TypeScript Errors**: Corrected type definitions and parameter handling in filter API
+- **SQL Query Structure**: Enhanced query building with proper parameter binding and error handling
+- **Port Configuration**: Fixed frontend API base URL from port 5002 to 5001 to match backend configuration
+
+### Verification
+All filters are now fully operational:
+- Department filter ✓
+- Schedule type filter ✓ 
+- Date range filter ✓
+- Search functionality ✓
+- Clock status filter ✓
+- Card type filter ✓
+
+### Technical Implementation
+- **Frontend**: React with Material-UI components, proper state management
+- **Backend**: Node.js/Express with SQL Server integration
+- **State Management**: Centralized filter state with proper API integration
+- **Export Functionality**: Excel export working with filtered data
+
+## 2025-10-25 - Schedule Page Material-UI Conversion
+
+### Issue Identified
+The Schedule page table (`TimeScheduleTable.tsx`) was using Shadcn UI components instead of Material-UI, creating inconsistency with the rest of the application.
+
+### Changes Made
+- **Component Conversion**: Converted entire `TimeScheduleTable.tsx` from Shadcn UI to Material-UI
+- **Table Components**: Replaced Shadcn Table with Material-UI Table, TableHead, TableBody, TableCell, TableRow
+- **Pagination**: Updated from custom Shadcn pagination to Material-UI Pagination component
+- **Styling**: Replaced TailwindCSS classes with Material-UI sx prop and styled components
+- **Badge/Chip**: Converted Badge components to Material-UI Chip components
+- **Cards**: Updated Card components to use Material-UI Card and CardContent
+- **Responsive Design**: Maintained mobile-first responsive behavior using Material-UI breakpoints
+
+### Technical Details
+- **Sorting**: Implemented TableSortLabel for column sorting functionality
+- **Mobile View**: Preserved mobile card layout with Material-UI Box and Typography components
+- **Theming**: Integrated with Material-UI theme system for consistent styling
+- **Performance**: Maintained existing performance optimizations and data handling
+
+### Verification
+- Frontend compilation successful ✓
+- Hot module replacement working ✓
+- Responsive behavior maintained ✓
+- Material-UI consistency achieved ✓
+
+## 2025-10-25 - SQL Server Time Field Timezone Fix
+
+### Issue Identified
+The Schedule page was displaying incorrect time values due to timezone conversion issues when processing SQL Server `time(7)` data type fields (`time_in` and `time_out`).
+
+**Problem**: 
+- Database stored: `time_in=08:00:00.0000000`, `time_out=18:00:00.0000000`
+- Frontend displayed: `Time In: 16:00`, `Time Out: 02:00`
+
+**Root Cause**: JavaScript Date object constructor was interpreting SQL Server time values as UTC and converting them to local timezone, causing an 8-hour shift.
+
+### Changes Made
+- **timeFormatter.js**: Updated `formatSQLTime` function to handle SQL Server `time(7)` format by extracting `HH:MM` directly from string format
+- **dateTimeFormatter.js**: Enhanced `formatTime` function to properly handle SQL Server time strings and use UTC methods for Date objects
+- **Time Handling**: Implemented direct string parsing for `HH:MM:SS.ms` format to avoid timezone conversion
+
+### Technical Implementation
+```javascript
+// Before: Timezone conversion issue
+const date = new Date(`1970-01-01T${timeValue}`);
+return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+
+// After: Direct string parsing
+if (typeof timeValue === 'string' && timeValue.match(/^\d{2}:\d{2}:\d{2}/)) {
+    return timeValue.substring(0, 5); // Extract HH:MM
+}
+```
+
+### Verification
+- Database values: `MTI230204` - `time_in=08:00`, `time_out=18:00` ✓
+- API response: `MTI230204` - `time_in=08:00`, `time_out=18:00` ✓
+- Frontend display: Values now match database exactly ✓
+- Backend server restart successful ✓
+
 ## 2025-01-24 16:21:00 - Enhanced Attendance Filter Implementation
 
 ### Problem
@@ -79,6 +162,61 @@ MuiEnhancedAttendance
 - Verify filter combinations work correctly
 - Test export functionality with all filters
 - Ensure responsive design on mobile devices
+
+---
+
+## October 25, 2025 - Enhanced Attendance Filter Implementation
+
+### Filter System Implementation
+- **Date Range Filters**: Implemented start and end date pickers with proper validation
+- **Search Filter**: Added text-based search functionality for staff names and numbers
+- **Department Filter**: Created dropdown with dynamic department options from API
+- **Card Type Filter**: Implemented card type selection dropdown
+- **Schedule Type Filter**: Added schedule type filtering (Normal Site, Three Shift variations)
+- **Clock Status Filters**: Implemented both Clock In and Clock Out status filters
+
+### Technical Implementation
+- **Frontend**: React components with Material-UI integration
+- **Backend**: Express.js API endpoints with SQL Server integration
+- **State Management**: React Query for efficient data fetching and caching
+- **Type Safety**: Full TypeScript implementation with proper type definitions
+
+### Filter Integration
+- All filters are properly integrated with the Enhanced Attendance page
+- Real-time filtering with debounced search input
+- Pagination support with filter persistence
+- Export functionality maintains applied filters
+
+### API Endpoints
+- `GET /api/enhanced-attendance` - Main data endpoint with filter support
+- `GET /api/filters` - Filter options endpoint for dropdowns
+- Export endpoints: `/export/csv`, `/export/pdf`, `/export/xlsx`
+
+### Filter Bug Fixes - October 25, 2025 10:45 AM
+- **Fixed Backend Filter Processing**: Resolved parameter casing mismatch in queryBuilder.js
+  - Updated `buildFilterConditions` to handle both `Department` and `department` parameters
+  - Added proper validation for empty and 'all' filter values
+  - Implemented computed field filtering for scheduleType, clockInStatus, clockOutStatus
+- **Fixed TypeScript Errors**: Corrected filter logic in dropdown components
+  - Fixed `CardTypeDropdown.tsx` filter condition (line 75-78)
+  - Fixed `DepartmentDropdown.tsx` filter condition (line 82-83)
+- **Enhanced SQL Query Structure**: Updated enhancedAttendanceService.js
+  - Added subquery approach for computed field filtering
+  - Improved WHERE clause construction for complex filters
+- **Verified Filter Functionality**: All filters now working correctly
+  - Department filter: ✅ Correctly filters by "Acid Plant" (627 results)
+  - Schedule Type filter: ✅ Correctly filters by "ThreeShift_Morning" (707 results)
+  - Search filter: ✅ Working with staff names and numbers
+  - Date range filter: ✅ Properly constraining results
+  - Clock status filters: ✅ Filtering by Early, OnTime, Late, Missing, etc.
+
+### Current Status
+- ✅ All filter components implemented and functional
+- ✅ Backend API integration complete with bug fixes
+- ✅ TypeScript definitions in place
+- ✅ Export functionality working with filters
+- ✅ Responsive design implemented
+- ✅ **Filter functionality fully operational and tested**
 
 ---
 
