@@ -39,6 +39,7 @@ export interface EnhancedAttendanceFilters {
   endDate: string;
   search?: string;
   department?: string;
+  cardType?: string;
   scheduleType?: 'Fixed' | 'Normal_Site' | 'TwoShift_Day' | 'TwoShift_Night' | 'ThreeShift_Morning' | 'ThreeShift_Afternoon' | 'ThreeShift_Night' | 'ThreeShift_Evening' | 'DayOff' | 'Admin_Day' | 'Overnight_Other' | 'Overnight_OT' | 'All';
   clockInStatus?: 'Early' | 'OnTime' | 'Late' | 'Out of Range' | 'Missing' | 'All';
   clockOutStatus?: 'Early' | 'OnTime' | 'Late' | 'Out of Range' | 'Missing' | 'All';

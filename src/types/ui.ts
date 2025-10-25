@@ -17,6 +17,7 @@ export interface FilterState {
   endDate: Dayjs;
   searchTerm: string;
   department: string;
+  cardType: string;
   scheduleType: ScheduleTypeOption;
   clockInStatus: StatusOption;
   clockOutStatus: StatusOption;

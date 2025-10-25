@@ -33,6 +33,8 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import PageHeader from "@/components/PageHeader";
 import MuiEnhancedAttendanceTable from "@/components/MuiEnhancedAttendanceTable";
+import DepartmentDropdown from "@/components/ui/DepartmentDropdown";
+import CardTypeDropdown from "@/components/ui/CardTypeDropdown";
 import { 
   useEnhancedAttendanceFilters, 
   useEnhancedAttendanceData, 
@@ -158,13 +160,19 @@ const MuiEnhancedAttendance: React.FC = () => {
 
               {/* Department */}
               <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Department"
-                  placeholder="Enter department..."
+                <DepartmentDropdown
                   value={filters.department}
-                  onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
+                  onChange={(value) => setFilters(prev => ({ ...prev, department: value }))}
+                  label="Department"
+                />
+              </Grid>
+
+              {/* Card Type */}
+              <Grid item xs={12} sm={6} md={3}>
+                <CardTypeDropdown
+                  value={filters.cardType}
+                  onChange={(value) => setFilters(prev => ({ ...prev, cardType: value }))}
+                  label="Card Type"
                 />
               </Grid>
 
