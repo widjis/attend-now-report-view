@@ -87,6 +87,23 @@ export default {
 - Docker build dependencies resolved ✓
 - TailwindCSS processing enabled for production builds ✓
 
+### Follow-up Issue & Resolution
+After creating the PostCSS config, encountered another Docker build error:
+```
+[Failed to load PostCSS config: Failed to load PostCSS config (searchPath: /app): [Error] Loading PostCSS Plugin failed: Cannot find module 'tailwindcss'
+```
+
+**Root Cause**: Missing TailwindCSS and PostCSS dependencies in `package.json`
+
+**Solution**: Added missing dependencies to `devDependencies`:
+- `tailwindcss: ^3.4.0`
+- `postcss: ^8.4.32` 
+- `autoprefixer: ^10.4.16`
+
+**Final Verification**:
+- Dependencies installed successfully ✓
+- Docker build should now complete without PostCSS errors ✓
+
 ## 2025-10-25 - SQL Server Time Field Timezone Fix
 
 ### Issue Identified
