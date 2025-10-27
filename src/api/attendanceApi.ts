@@ -137,7 +137,7 @@ const checkBackendAvailability = async (): Promise<boolean> => {
   try {
     // For relative URLs, we need to extract the health endpoint differently
     const useRelativeUrl = import.meta.env.VITE_USE_RELATIVE_API_URL === 'true';
-    const healthEndpoint = useRelativeUrl ? '/health' : `${API_BASE_URL.replace('/api', '')}/health`;
+    const healthEndpoint = useRelativeUrl ? '/api/health' : `${API_BASE_URL}/health`;
     
     const response = await fetch(healthEndpoint, {
       method: 'GET',

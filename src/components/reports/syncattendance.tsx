@@ -375,7 +375,7 @@ const SyncAttendance: React.FC = () => {
                   {history.map((item, index) => (
                     <TableRow key={index}>
                       <TableCell>
-                        {new Date(item.createdAt).toLocaleString()}
+                        {new Date(item.executedAt).toLocaleString()}
                       </TableCell>
                       <TableCell>
                         <Chip
