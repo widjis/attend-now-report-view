@@ -38,19 +38,15 @@ const SyncAttendance: React.FC = () => {
     sendWhatsApp: false,
     whatsappChatId: '',
     dryRun: true,
-    batchSize: 1000,
-    tolerance: 30,
-    insertToMCG: true,
-    useManualTimes: false,
-    manualInTime: '08:00',
-    manualOutTime: '17:00',
+    batchSize: 100,
   });
 
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SyncResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<SyncHistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const [previewData, setPreviewData] = useState<any>(null);
+  const [previewData, setPreviewData] = useState<any[]>([]);
   const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
@@ -70,6 +66,7 @@ const SyncAttendance: React.FC = () => {
 
   const handleSync = async () => {
     setLoading(true);
+    setError(null);
     setResult(null);
     
     try {
@@ -77,12 +74,7 @@ const SyncAttendance: React.FC = () => {
       setResult(result);
       await loadSyncHistory(); // Refresh history
     } catch (error) {
-      console.error('Sync failed:', error);
-      setResult({
-        success: false,
-        message: error instanceof Error ? error.message : 'Sync failed',
-        data: {} as any
-      });
+      setError(error instanceof Error ? error.message : 'An error occurred during sync');
     } finally {
       setLoading(false);
     }
@@ -98,20 +90,7 @@ const SyncAttendance: React.FC = () => {
       setPreviewData(response.data);
       setShowPreview(true);
     } catch (error) {
-      console.error('Preview failed:', error);
-    }
-  };
-
-  const formatDateTime = (dateTime: string) => {
-    return new Date(dateTime).toLocaleString();
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'success': return 'success';
-      case 'error': return 'error';
-      case 'running': return 'warning';
-      default: return 'default';
+      setError(error instanceof Error ? error.message : 'Failed to preview data');
     }
   };
 
@@ -123,7 +102,7 @@ const SyncAttendance: React.FC = () => {
         </Typography>
         
         <Grid container spacing={3}>
-          {/* Sync Parameters */}
+          {/* Configuration Card */}
           <Grid item xs={12} md={8}>
             <Card>
               <CardContent>
@@ -164,25 +143,40 @@ const SyncAttendance: React.FC = () => {
                     <TextField
                       label="Batch Size"
                       type="number"
+                      fullWidth
                       value={params.batchSize}
                       onChange={(e) => setParams(prev => ({
                         ...prev,
-                        batchSize: parseInt(e.target.value) || 1000
+                        batchSize: parseInt(e.target.value) || 100
                       }))}
-                      fullWidth
                     />
                   </Grid>
                   
-                  <Grid item xs={12} md={6}>
+                  <Grid item xs={12}>
                     <TextField
-                      label="Tolerance (minutes)"
-                      type="number"
-                      value={params.tolerance}
+                      label="WhatsApp Chat ID (optional)"
+                      fullWidth
+                      value={params.whatsappChatId}
                       onChange={(e) => setParams(prev => ({
                         ...prev,
-                        tolerance: parseInt(e.target.value) || 30
+                        whatsappChatId: e.target.value
                       }))}
-                      fullWidth
+                      helperText="Leave empty to use default chat"
+                    />
+                  </Grid>
+                  
+                  <Grid item xs={12}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={params.sendWhatsApp}
+                          onChange={(e) => setParams(prev => ({
+                            ...prev,
+                            sendWhatsApp: e.target.checked
+                          }))}
+                        />
+                      }
+                      label="Send WhatsApp Notification"
                     />
                   </Grid>
                   
@@ -197,74 +191,14 @@ const SyncAttendance: React.FC = () => {
                           }))}
                         />
                       }
-                      label="Dry Run (Preview only, don't save data)"
+                      label="Dry Run (Preview Only)"
                     />
                   </Grid>
-                  
-                  <Grid item xs={12}>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={params.insertToMCG}
-                          onChange={(e) => setParams(prev => ({
-                            ...prev,
-                            insertToMCG: e.target.checked
-                          }))}
-                        />
-                      }
-                      label="Insert to MCG Tables"
-                    />
-                  </Grid>
-                  
-                  <Grid item xs={12}>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={params.useManualTimes}
-                          onChange={(e) => setParams(prev => ({
-                            ...prev,
-                            useManualTimes: e.target.checked
-                          }))}
-                        />
-                      }
-                      label="Use Manual Times"
-                    />
-                  </Grid>
-                  
-                  {params.useManualTimes && (
-                    <>
-                      <Grid item xs={12} md={6}>
-                        <TextField
-                          label="Manual In Time"
-                          type="time"
-                          value={params.manualInTime}
-                          onChange={(e) => setParams(prev => ({
-                            ...prev,
-                            manualInTime: e.target.value
-                          }))}
-                          fullWidth
-                          InputLabelProps={{ shrink: true }}
-                        />
-                      </Grid>
-                      
-                      <Grid item xs={12} md={6}>
-                        <TextField
-                          label="Manual Out Time"
-                          type="time"
-                          value={params.manualOutTime}
-                          onChange={(e) => setParams(prev => ({
-                            ...prev,
-                            manualOutTime: e.target.value
-                          }))}
-                          fullWidth
-                          InputLabelProps={{ shrink: true }}
-                        />
-                      </Grid>
-                    </>
-                  )}
                 </Grid>
                 
-                <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+                <Divider sx={{ my: 2 }} />
+                
+                <Box sx={{ display: 'flex', gap: 2 }}>
                   <Button
                     variant="outlined"
                     onClick={handlePreview}
@@ -281,93 +215,93 @@ const SyncAttendance: React.FC = () => {
                   >
                     {loading ? 'Syncing...' : 'Start Sync'}
                   </Button>
+                  
+                  <Button
+                    variant="outlined"
+                    onClick={() => setShowHistory(true)}
+                  >
+                    View History
+                  </Button>
                 </Box>
               </CardContent>
             </Card>
           </Grid>
           
-          {/* Sync History */}
+          {/* Status Card */}
           <Grid item xs={12} md={4}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Recent Sync History
+                  Sync Status
                 </Typography>
                 
-                {history.length > 0 ? (
+                {error && (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    {error}
+                  </Alert>
+                )}
+                
+                {result && (
                   <Box>
-                    {history.slice(0, 5).map((item) => (
-                      <Box key={item.id} sx={{ mb: 2, p: 1, border: '1px solid #e0e0e0', borderRadius: 1 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                          <Chip
-                            label={item.status}
-                            color={getStatusColor(item.status) as any}
-                            size="small"
-                          />
-                          <Typography variant="caption">
-                            {formatDateTime(item.executedAt)}
-                          </Typography>
-                        </Box>
-                        <Typography variant="body2">
-                          Processed: {item.recordsProcessed} | Inserted: {item.recordsInserted}
-                        </Typography>
-                      </Box>
-                    ))}
+                    <Chip
+                      label={result.success ? 'Success' : 'Failed'}
+                      color={result.success ? 'success' : 'error'}
+                      sx={{ mb: 2 }}
+                    />
                     
-                    <Button
-                      variant="text"
-                      size="small"
-                      onClick={() => setShowHistory(true)}
-                    >
-                      View All History
-                    </Button>
+                    <Typography variant="body2" gutterBottom>
+                      <strong>Records Processed:</strong> {result.data?.recordsProcessed || 0}
+                    </Typography>
+                    
+                    <Typography variant="body2" gutterBottom>
+                      <strong>Records Synced:</strong> {result.data?.recordsInserted || 0}
+                    </Typography>
+                    
+                    <Typography variant="body2" gutterBottom>
+                      <strong>Errors:</strong> {result.data?.errors?.length || 0}
+                    </Typography>
+                    
+                    <Typography variant="body2" gutterBottom>
+                      <strong>Duration:</strong> {result.data?.executionTimeMs ? `${result.data.executionTimeMs}ms` : 'N/A'}
+                    </Typography>
+                    
+                    {result.message && (
+                      <Typography variant="body2" sx={{ mt: 1 }}>
+                        <strong>Message:</strong> {result.message}
+                      </Typography>
+                    )}
+                    
+                    {result.data?.errors && result.data.errors.length > 0 && (
+                      <Box sx={{ mt: 2 }}>
+                        <Typography variant="body2" color="error">
+                          <strong>Errors:</strong>
+                        </Typography>
+                        {result.data.errors.slice(0, 3).map((error, index) => (
+                          <Typography key={index} variant="caption" display="block" color="error">
+                            • {error}
+                          </Typography>
+                        ))}
+                        {result.data.errors.length > 3 && (
+                          <Typography variant="caption" color="error">
+                            ... and {result.data.errors.length - 3} more errors
+                          </Typography>
+                        )}
+                      </Box>
+                    )}
                   </Box>
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    No sync history available
-                  </Typography>
+                )}
+                
+                {loading && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <CircularProgress size={20} />
+                    <Typography variant="body2">
+                      Syncing attendance data...
+                    </Typography>
+                  </Box>
                 )}
               </CardContent>
             </Card>
           </Grid>
-          
-          {/* Sync Result */}
-          {result && (
-            <Grid item xs={12}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Sync Result
-                  </Typography>
-                  
-                  <Alert severity={result.success ? 'success' : 'error'} sx={{ mb: 2 }}>
-                    {result.message}
-                  </Alert>
-                  
-                  {result.success && result.data && (
-                    <Grid container spacing={2}>
-                      <Grid item xs={6} md={3}>
-                        <Typography variant="body2" color="text.secondary">Total Retrieved</Typography>
-                        <Typography variant="h6">{result.data.totalRetrieved}</Typography>
-                      </Grid>
-                      <Grid item xs={6} md={3}>
-                        <Typography variant="body2" color="text.secondary">Records Processed</Typography>
-                        <Typography variant="h6">{result.data.recordsProcessed}</Typography>
-                      </Grid>
-                      <Grid item xs={6} md={3}>
-                        <Typography variant="body2" color="text.secondary">Records Inserted</Typography>
-                        <Typography variant="h6">{result.data.recordsInserted}</Typography>
-                      </Grid>
-                      <Grid item xs={6} md={3}>
-                        <Typography variant="body2" color="text.secondary">Execution Time</Typography>
-                        <Typography variant="h6">{result.data.executionTimeMs}ms</Typography>
-                      </Grid>
-                    </Grid>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-          )}
         </Grid>
         
         {/* Preview Dialog */}
@@ -379,38 +313,38 @@ const SyncAttendance: React.FC = () => {
         >
           <DialogTitle>Data Preview</DialogTitle>
           <DialogContent>
-            {previewData && (
-              <Box>
-                <Typography variant="body1" gutterBottom>
-                  Found {previewData.totalRecords} records in the selected date range
-                </Typography>
-                
-                <TableContainer component={Paper} sx={{ mt: 2 }}>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Employee ID</TableCell>
-                        <TableCell>Employee Name</TableCell>
-                        <TableCell>Transaction Time</TableCell>
-                        <TableCell>Transaction Type</TableCell>
-                        <TableCell>Controller</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {previewData.sampleRecords?.slice(0, 10).map((record: any, index: number) => (
-                        <TableRow key={index}>
-                          <TableCell>{record.EmployeeID}</TableCell>
-                          <TableCell>{record.EmployeeName}</TableCell>
-                          <TableCell>{formatDateTime(record.TransactionTime)}</TableCell>
-                          <TableCell>{record.TransactionType}</TableCell>
-                          <TableCell>{record.ControllerName}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Box>
-            )}
+            <TableContainer component={Paper}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Employee ID</TableCell>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Check In</TableCell>
+                    <TableCell>Check Out</TableCell>
+                    <TableCell>Status</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {previewData.map((row, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{row.employeeId}</TableCell>
+                      <TableCell>{row.employeeName}</TableCell>
+                      <TableCell>{new Date(row.date).toLocaleDateString()}</TableCell>
+                      <TableCell>{row.checkIn || 'N/A'}</TableCell>
+                      <TableCell>{row.checkOut || 'N/A'}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={row.status}
+                          size="small"
+                          color={row.status === 'Present' ? 'success' : 'default'}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setShowPreview(false)}>Close</Button>
@@ -421,7 +355,7 @@ const SyncAttendance: React.FC = () => {
         <Dialog
           open={showHistory}
           onClose={() => setShowHistory(false)}
-          maxWidth="lg"
+          maxWidth="md"
           fullWidth
         >
           <DialogTitle>Sync History</DialogTitle>
@@ -430,31 +364,36 @@ const SyncAttendance: React.FC = () => {
               <Table>
                 <TableHead>
                   <TableRow>
+                    <TableCell>Date</TableCell>
                     <TableCell>Status</TableCell>
-                    <TableCell>Date Range</TableCell>
-                    <TableCell>Processed</TableCell>
-                    <TableCell>Inserted</TableCell>
+                    <TableCell>Records</TableCell>
                     <TableCell>Duration</TableCell>
-                    <TableCell>Executed At</TableCell>
+                    <TableCell>Type</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {history.map((item) => (
-                    <TableRow key={item.id}>
+                  {history.map((item, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        {new Date(item.createdAt).toLocaleString()}
+                      </TableCell>
                       <TableCell>
                         <Chip
                           label={item.status}
-                          color={getStatusColor(item.status) as any}
                           size="small"
+                          color={item.status === 'completed' ? 'success' : 
+                                item.status === 'failed' ? 'error' : 'default'}
                         />
                       </TableCell>
+                      <TableCell>{item.recordsProcessed || 0}</TableCell>
+                      <TableCell>{item.duration || 'N/A'}</TableCell>
                       <TableCell>
-                        {formatDateTime(item.startDate)} - {formatDateTime(item.endDate)}
+                        <Chip
+                          label={item.dryRun ? 'Dry Run' : 'Live'}
+                          size="small"
+                          variant={item.dryRun ? 'outlined' : 'filled'}
+                        />
                       </TableCell>
-                      <TableCell>{item.recordsProcessed}</TableCell>
-                      <TableCell>{item.recordsInserted}</TableCell>
-                      <TableCell>{item.executionTimeMs}ms</TableCell>
-                      <TableCell>{formatDateTime(item.executedAt)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
