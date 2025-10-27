@@ -28,7 +28,7 @@ import {
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { syncAttendance, getSyncHistory } from '@/api/syncApi';
+import { syncAttendance, getSyncHistory, previewSyncData } from '@/api/syncApi';
 import { SyncAttendanceParams, SyncResult, SyncHistoryItem } from '@/types/sync';
 
 const SyncAttendance: React.FC = () => {
@@ -90,7 +90,7 @@ const SyncAttendance: React.FC = () => {
 
   const handlePreview = async () => {
     try {
-      const response = await syncAttendanceApi.previewSyncData({
+      const response = await previewSyncData({
         startDateTime: params.startDateTime,
         endDateTime: params.endDateTime,
         limit: 100
@@ -140,7 +140,9 @@ const SyncAttendance: React.FC = () => {
                         ...prev,
                         startDateTime: date.toISOString()
                       }))}
-                      renderInput={(props) => <TextField {...props} fullWidth />}
+                      slotProps={{
+                        textField: { fullWidth: true }
+                      }}
                     />
                   </Grid>
                   
@@ -152,7 +154,9 @@ const SyncAttendance: React.FC = () => {
                         ...prev,
                         endDateTime: date.toISOString()
                       }))}
-                      renderInput={(props) => <TextField {...props} fullWidth />}
+                      slotProps={{
+                        textField: { fullWidth: true }
+                      }}
                     />
                   </Grid>
                   
