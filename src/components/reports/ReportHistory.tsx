@@ -33,7 +33,7 @@ import {
 } from '@mui/icons-material';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { getReportHistory } from '../../api/reportApi';
+import { getReportHistory } from '../../api/reportapi';
 import { ReportHistoryItem, ReportHistoryResponse } from '../../types/report';
 import { format } from 'date-fns';
 

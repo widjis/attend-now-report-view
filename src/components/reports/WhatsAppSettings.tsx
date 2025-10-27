@@ -26,7 +26,7 @@ import {
   getWhatsAppConfig,
   updateWhatsAppConfig,
   testWhatsAppConnection,
-} from '../../api/reportApi';
+} from '../../api/reportapi';
 import { WhatsAppConfig } from '../../types/report';
 
 const WhatsAppSettings: React.FC = () => {

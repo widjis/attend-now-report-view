@@ -33,7 +33,7 @@ import {
 } from 'recharts';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { getReportStatistics } from '../../api/reportApi';
+import { getReportStatistics } from '../../api/reportapi';
 import { ReportStatistics as ReportStatisticsType } from '../../types/report';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
