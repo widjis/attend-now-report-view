@@ -4,472 +4,461 @@ import {
   Card,
   CardContent,
   Typography,
-  Grid,
   Button,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Chip,
+  FormControlLabel,
+  Switch,
+  Grid,
   Alert,
   CircularProgress,
-  Switch,
-  FormControlLabel,
   Divider,
+  Chip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Paper,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
 } from '@mui/material';
-import {
-  DateTimePicker,
-  LocalizationProvider,
-} from '@mui/x-date-pickers';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import {
-  ExpandMore as ExpandMoreIcon,
-  Sync as SyncIcon,
-  Schedule as ScheduleIcon,
-  WhatsApp as WhatsAppIcon,
-  Settings as SettingsIcon,
-  PlayArrow as PlayArrowIcon,
-  Stop as StopIcon,
-  History as HistoryIcon,
-  Notifications as NotificationsIcon,
-  AccessTime as AccessTimeIcon,
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  Info as InfoIcon,
-} from '@mui/icons-material';
-import { 
-  syncAttendance, 
-  getSyncHistory, 
-  getSyncSchedule, 
-  updateSyncSchedule,
-  testWhatsAppConnection 
-} from '../../api/syncApi';
-import { SyncAttendanceParams, SyncResult, SyncSchedule } from '../../types/sync';
+import { syncAttendance, getSyncHistory } from '@/api/syncApi';
+import { SyncAttendanceParams, SyncResult, SyncHistoryItem } from '@/types/sync';
 
 const SyncAttendance: React.FC = () => {
-  // State management
-  const [startDateTime, setStartDateTime] = useState<Date | null>(new Date());
-  const [endDateTime, setEndDateTime] = useState<Date | null>(new Date());
-  const [autoSync, setAutoSync] = useState(true);
-  const [syncSchedule, setSyncSchedule] = useState<SyncSchedule>({
-    enabled: true,
-    schedules: [
-      { time: '01:00', enabled: true, description: 'Daily sync at 1:00 AM' },
-      { time: '13:00', enabled: true, description: 'Daily sync at 1:00 PM' }
-    ]
+  const [params, setParams] = useState<SyncAttendanceParams>({
+    startDateTime: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // Yesterday
+    endDateTime: new Date().toISOString(), // Now
+    sendWhatsApp: false,
+    whatsappChatId: '',
+    dryRun: true,
+    batchSize: 1000,
+    tolerance: 30,
+    insertToMCG: true,
+    useManualTimes: false,
+    manualInTime: '08:00',
+    manualOutTime: '17:00',
   });
-  const [whatsappEnabled, setWhatsappEnabled] = useState(true);
-  const [whatsappChatId, setWhatsappChatId] = useState('');
-  
-  // UI State
+
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SyncResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [syncHistory, setSyncHistory] = useState<any[]>([]);
-  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
-  const [expandedSchedule, setExpandedSchedule] = useState(false);
-  const [expandedHistory, setExpandedHistory] = useState(false);
+  const [history, setHistory] = useState<SyncHistoryItem[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
-  // Load sync history and schedule on component mount
   useEffect(() => {
     loadSyncHistory();
-    loadSyncSchedule();
   }, []);
 
   const loadSyncHistory = async () => {
     try {
       const response = await getSyncHistory({ limit: 10 });
-      setSyncHistory(response.data);
-    } catch (err) {
-      console.error('Failed to load sync history:', err);
+      if (response.success) {
+        setHistory(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to load sync history:', error);
     }
   };
 
-  const loadSyncSchedule = async () => {
-    try {
-      const response = await getSyncSchedule();
-      setSyncSchedule(response.data);
-    } catch (err) {
-      console.error('Failed to load sync schedule:', err);
-    }
-  };
-
-  // Handle manual sync
-  const handleSyncAttendance = async () => {
-    if (!startDateTime || !endDateTime) {
-      setError('Please select both start and end date/time');
-      return;
-    }
-
+  const handleSync = async () => {
     setLoading(true);
-    setError(null);
     setResult(null);
-
+    
     try {
-      const params: SyncAttendanceParams = {
-        startDateTime: startDateTime.toISOString(),
-        endDateTime: endDateTime.toISOString(),
-        sendWhatsApp: whatsappEnabled,
-        whatsappChatId: whatsappEnabled ? whatsappChatId : undefined,
-      };
-
-      const response = await syncAttendance(params);
-      setResult(response);
-      loadSyncHistory(); // Refresh history
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to sync attendance');
+      const result = await syncAttendance(params);
+      setResult(result);
+      await loadSyncHistory(); // Refresh history
+    } catch (error) {
+      console.error('Sync failed:', error);
+      setResult({
+        success: false,
+        message: error instanceof Error ? error.message : 'Sync failed',
+        data: {} as any
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle schedule update
-  const handleUpdateSchedule = async () => {
+  const handlePreview = async () => {
     try {
-      await updateSyncSchedule(syncSchedule);
-      setScheduleDialogOpen(false);
-      loadSyncSchedule();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update schedule');
+      const response = await syncAttendanceApi.previewSyncData({
+        startDateTime: params.startDateTime,
+        endDateTime: params.endDateTime,
+        limit: 100
+      });
+      setPreviewData(response.data);
+      setShowPreview(true);
+    } catch (error) {
+      console.error('Preview failed:', error);
     }
   };
 
-  // Test WhatsApp connection
-  const handleTestWhatsApp = async () => {
-    try {
-      const response = await testWhatsAppConnection();
-      if (response.success) {
-        setError(null);
-        // Show success message
-      }
-    } catch (err: any) {
-      setError('WhatsApp connection test failed: ' + (err.response?.data?.message || err.message));
-    }
+  const formatDateTime = (dateTime: string) => {
+    return new Date(dateTime).toLocaleString();
   };
 
-  const formatSyncStatus = (status: string) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case 'success':
-        return { icon: <CheckCircleIcon color="success" />, color: 'success.main' };
-      case 'error':
-        return { icon: <ErrorIcon color="error" />, color: 'error.main' };
-      case 'running':
-        return { icon: <CircularProgress size={20} />, color: 'info.main' };
-      default:
-        return { icon: <InfoIcon color="info" />, color: 'info.main' };
+      case 'success': return 'success';
+      case 'error': return 'error';
+      case 'running': return 'warning';
+      default: return 'default';
     }
   };
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Box sx={{ p: 3 }}>
-        <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <SyncIcon />
+        <Typography variant="h4" gutterBottom>
           Sync Attendance
         </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-          Synchronize attendance data between tblTransaction (DataDBEnt) to tblAttendance & MCG tables
-        </Typography>
-
+        
         <Grid container spacing={3}>
-          {/* Main Sync Panel */}
+          {/* Sync Parameters */}
           <Grid item xs={12} md={8}>
             <Card>
               <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <PlayArrowIcon />
-                  Manual Sync
+                <Typography variant="h6" gutterBottom>
+                  Sync Parameters
                 </Typography>
-
+                
                 <Grid container spacing={2}>
-                  {/* Date/Time Selection */}
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12} md={6}>
                     <DateTimePicker
                       label="Start Date & Time"
-                      value={startDateTime}
-                      onChange={setStartDateTime}
-                      slotProps={{ textField: { fullWidth: true } }}
+                      value={new Date(params.startDateTime)}
+                      onChange={(date) => date && setParams(prev => ({
+                        ...prev,
+                        startDateTime: date.toISOString()
+                      }))}
+                      renderInput={(props) => <TextField {...props} fullWidth />}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  
+                  <Grid item xs={12} md={6}>
                     <DateTimePicker
                       label="End Date & Time"
-                      value={endDateTime}
-                      onChange={setEndDateTime}
-                      slotProps={{ textField: { fullWidth: true } }}
+                      value={new Date(params.endDateTime)}
+                      onChange={(date) => date && setParams(prev => ({
+                        ...prev,
+                        endDateTime: date.toISOString()
+                      }))}
+                      renderInput={(props) => <TextField {...props} fullWidth />}
                     />
                   </Grid>
-
-                  {/* WhatsApp Options */}
+                  
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="Batch Size"
+                      type="number"
+                      value={params.batchSize}
+                      onChange={(e) => setParams(prev => ({
+                        ...prev,
+                        batchSize: parseInt(e.target.value) || 1000
+                      }))}
+                      fullWidth
+                    />
+                  </Grid>
+                  
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="Tolerance (minutes)"
+                      type="number"
+                      value={params.tolerance}
+                      onChange={(e) => setParams(prev => ({
+                        ...prev,
+                        tolerance: parseInt(e.target.value) || 30
+                      }))}
+                      fullWidth
+                    />
+                  </Grid>
+                  
                   <Grid item xs={12}>
                     <FormControlLabel
                       control={
                         <Switch
-                          checked={whatsappEnabled}
-                          onChange={(e) => setWhatsappEnabled(e.target.checked)}
+                          checked={params.dryRun}
+                          onChange={(e) => setParams(prev => ({
+                            ...prev,
+                            dryRun: e.target.checked
+                          }))}
                         />
                       }
-                      label="Send WhatsApp Notification"
+                      label="Dry Run (Preview only, don't save data)"
                     />
                   </Grid>
                   
-                  {whatsappEnabled && (
-                    <Grid item xs={12}>
-                      <TextField
-                        fullWidth
-                        label="WhatsApp Chat ID"
-                        value={whatsappChatId}
-                        onChange={(e) => setWhatsappChatId(e.target.value)}
-                        placeholder="Enter WhatsApp chat ID"
-                        InputProps={{
-                          endAdornment: (
-                            <IconButton onClick={handleTestWhatsApp} size="small">
-                              <WhatsAppIcon />
-                            </IconButton>
-                          )
-                        }}
-                      />
-                    </Grid>
+                  <Grid item xs={12}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={params.insertToMCG}
+                          onChange={(e) => setParams(prev => ({
+                            ...prev,
+                            insertToMCG: e.target.checked
+                          }))}
+                        />
+                      }
+                      label="Insert to MCG Tables"
+                    />
+                  </Grid>
+                  
+                  <Grid item xs={12}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={params.useManualTimes}
+                          onChange={(e) => setParams(prev => ({
+                            ...prev,
+                            useManualTimes: e.target.checked
+                          }))}
+                        />
+                      }
+                      label="Use Manual Times"
+                    />
+                  </Grid>
+                  
+                  {params.useManualTimes && (
+                    <>
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          label="Manual In Time"
+                          type="time"
+                          value={params.manualInTime}
+                          onChange={(e) => setParams(prev => ({
+                            ...prev,
+                            manualInTime: e.target.value
+                          }))}
+                          fullWidth
+                          InputLabelProps={{ shrink: true }}
+                        />
+                      </Grid>
+                      
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          label="Manual Out Time"
+                          type="time"
+                          value={params.manualOutTime}
+                          onChange={(e) => setParams(prev => ({
+                            ...prev,
+                            manualOutTime: e.target.value
+                          }))}
+                          fullWidth
+                          InputLabelProps={{ shrink: true }}
+                        />
+                      </Grid>
+                    </>
                   )}
                 </Grid>
-
-                {/* Action Buttons */}
-                <Box sx={{ mt: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                
+                <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+                  <Button
+                    variant="outlined"
+                    onClick={handlePreview}
+                    disabled={loading}
+                  >
+                    Preview Data
+                  </Button>
+                  
                   <Button
                     variant="contained"
-                    startIcon={loading ? <CircularProgress size={20} /> : <SyncIcon />}
-                    onClick={handleSyncAttendance}
+                    onClick={handleSync}
                     disabled={loading}
-                    size="large"
+                    startIcon={loading ? <CircularProgress size={20} /> : null}
                   >
-                    {loading ? 'Syncing...' : 'Sync Attendance'}
+                    {loading ? 'Syncing...' : 'Start Sync'}
                   </Button>
                 </Box>
               </CardContent>
             </Card>
-
-            {/* Automated Schedule */}
-            <Card sx={{ mt: 2 }}>
-              <CardContent>
-                <Accordion 
-                  expanded={expandedSchedule} 
-                  onChange={() => setExpandedSchedule(!expandedSchedule)}
-                >
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <ScheduleIcon />
-                      Automated Schedule
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12}>
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={syncSchedule.enabled}
-                              onChange={(e) => setSyncSchedule({
-                                ...syncSchedule,
-                                enabled: e.target.checked
-                              })}
-                            />
-                          }
-                          label="Enable Automated Sync"
-                        />
-                      </Grid>
-                      
-                      <Grid item xs={12}>
-                        <Typography variant="subtitle2" gutterBottom>
-                          Current Schedule:
-                        </Typography>
-                        <List dense>
-                          {syncSchedule.schedules.map((schedule, index) => (
-                            <ListItem key={index}>
-                              <ListItemIcon>
-                                <AccessTimeIcon />
-                              </ListItemIcon>
-                              <ListItemText
-                                primary={schedule.time}
-                                secondary={schedule.description}
-                              />
-                              <Switch
-                                checked={schedule.enabled}
-                                onChange={(e) => {
-                                  const newSchedules = [...syncSchedule.schedules];
-                                  newSchedules[index].enabled = e.target.checked;
-                                  setSyncSchedule({
-                                    ...syncSchedule,
-                                    schedules: newSchedules
-                                  });
-                                }}
-                              />
-                            </ListItem>
-                          ))}
-                        </List>
-                      </Grid>
-                      
-                      <Grid item xs={12}>
-                        <Button
-                          variant="outlined"
-                          startIcon={<SettingsIcon />}
-                          onClick={() => setScheduleDialogOpen(true)}
-                        >
-                          Configure Schedule
-                        </Button>
-                      </Grid>
-                    </Grid>
-                  </AccordionDetails>
-                </Accordion>
-              </CardContent>
-            </Card>
-
-            {/* Sync History */}
-            <Card sx={{ mt: 2 }}>
-              <CardContent>
-                <Accordion 
-                  expanded={expandedHistory} 
-                  onChange={() => setExpandedHistory(!expandedHistory)}
-                >
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <HistoryIcon />
-                      Sync History
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <List>
-                      {syncHistory.map((sync, index) => {
-                        const statusInfo = formatSyncStatus(sync.status);
-                        return (
-                          <ListItem key={index} divider>
-                            <ListItemIcon>
-                              {statusInfo.icon}
-                            </ListItemIcon>
-                            <ListItemText
-                              primary={`${sync.startDate} - ${sync.endDate}`}
-                              secondary={
-                                <Box>
-                                  <Typography variant="body2">
-                                    Status: {sync.status} | 
-                                    Processed: {sync.recordsProcessed} | 
-                                    Valid: {sync.validRecords} | 
-                                    Invalid: {sync.invalidRecords}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {new Date(sync.executedAt).toLocaleString()}
-                                  </Typography>
-                                </Box>
-                              }
-                            />
-                          </ListItem>
-                        );
-                      })}
-                    </List>
-                  </AccordionDetails>
-                </Accordion>
-              </CardContent>
-            </Card>
           </Grid>
-
-          {/* Results Panel */}
+          
+          {/* Sync History */}
           <Grid item xs={12} md={4}>
             <Card>
               <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <NotificationsIcon />
-                  Sync Results
+                <Typography variant="h6" gutterBottom>
+                  Recent Sync History
                 </Typography>
-
-                {error && (
-                  <Alert severity="error" sx={{ mb: 2 }}>
-                    {error}
-                  </Alert>
-                )}
-
-                {result && (
-                  <Paper sx={{ p: 2, bgcolor: 'success.light', color: 'success.contrastText' }}>
-                    <Typography variant="subtitle2" gutterBottom>
-                      📅 Attendance Sync Complete! 📅
-                    </Typography>
-                    <Typography variant="body2">
-                      Date: {new Date(result.data.executedAt).toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      })}
-                    </Typography>
-                    <Typography variant="body2">
-                      Status: ✅ Success
-                    </Typography>
-                    <Divider sx={{ my: 1 }} />
-                    <Typography variant="body2">
-                      - Total transactions retrieved: {result.data.totalRetrieved}
-                    </Typography>
-                    <Typography variant="body2">
-                      - Total transactions processed: {result.data.recordsProcessed}
-                    </Typography>
-                    <Typography variant="body2">
-                      - Valid transactions: {result.data.validRecords}
-                    </Typography>
-                    <Typography variant="body2">
-                      - Invalid transactions: {result.data.invalidRecords}
-                    </Typography>
-                    <Divider sx={{ my: 1 }} />
-                    <Typography variant="body2">
-                      📊 Sync completed successfully! 📊
-                    </Typography>
-                    <Typography variant="body2">
-                      🕒 Execution Time: {new Date(result.data.executedAt).toLocaleString()}
-                    </Typography>
-                    {result.data.whatsapp && (
-                      <Box sx={{ mt: 1, pt: 1, borderTop: 1, borderColor: 'divider' }}>
+                
+                {history.length > 0 ? (
+                  <Box>
+                    {history.slice(0, 5).map((item) => (
+                      <Box key={item.id} sx={{ mb: 2, p: 1, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                          <Chip
+                            label={item.status}
+                            color={getStatusColor(item.status) as any}
+                            size="small"
+                          />
+                          <Typography variant="caption">
+                            {formatDateTime(item.executedAt)}
+                          </Typography>
+                        </Box>
                         <Typography variant="body2">
-                          WhatsApp: {result.data.whatsapp.success ? '✅ Sent' : '❌ Failed'}
+                          Processed: {item.recordsProcessed} | Inserted: {item.recordsInserted}
                         </Typography>
                       </Box>
-                    )}
-                  </Paper>
-                )}
-
-                {!result && !error && !loading && (
+                    ))}
+                    
+                    <Button
+                      variant="text"
+                      size="small"
+                      onClick={() => setShowHistory(true)}
+                    >
+                      View All History
+                    </Button>
+                  </Box>
+                ) : (
                   <Typography variant="body2" color="text.secondary">
-                    Configure parameters and click "Sync Attendance" to see results here.
+                    No sync history available
                   </Typography>
                 )}
               </CardContent>
             </Card>
           </Grid>
+          
+          {/* Sync Result */}
+          {result && (
+            <Grid item xs={12}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Sync Result
+                  </Typography>
+                  
+                  <Alert severity={result.success ? 'success' : 'error'} sx={{ mb: 2 }}>
+                    {result.message}
+                  </Alert>
+                  
+                  {result.success && result.data && (
+                    <Grid container spacing={2}>
+                      <Grid item xs={6} md={3}>
+                        <Typography variant="body2" color="text.secondary">Total Retrieved</Typography>
+                        <Typography variant="h6">{result.data.totalRetrieved}</Typography>
+                      </Grid>
+                      <Grid item xs={6} md={3}>
+                        <Typography variant="body2" color="text.secondary">Records Processed</Typography>
+                        <Typography variant="h6">{result.data.recordsProcessed}</Typography>
+                      </Grid>
+                      <Grid item xs={6} md={3}>
+                        <Typography variant="body2" color="text.secondary">Records Inserted</Typography>
+                        <Typography variant="h6">{result.data.recordsInserted}</Typography>
+                      </Grid>
+                      <Grid item xs={6} md={3}>
+                        <Typography variant="body2" color="text.secondary">Execution Time</Typography>
+                        <Typography variant="h6">{result.data.executionTimeMs}ms</Typography>
+                      </Grid>
+                    </Grid>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+          )}
         </Grid>
-
-        {/* Schedule Configuration Dialog */}
-        <Dialog open={scheduleDialogOpen} onClose={() => setScheduleDialogOpen(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>Configure Sync Schedule</DialogTitle>
+        
+        {/* Preview Dialog */}
+        <Dialog
+          open={showPreview}
+          onClose={() => setShowPreview(false)}
+          maxWidth="lg"
+          fullWidth
+        >
+          <DialogTitle>Data Preview</DialogTitle>
           <DialogContent>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Configure when automatic attendance sync should run. Default times are 1:00 AM and 1:00 PM.
-            </Typography>
-            {/* Schedule configuration form would go here */}
-            <Alert severity="info" sx={{ mt: 2 }}>
-              Schedule configuration will be implemented in the next phase.
-            </Alert>
+            {previewData && (
+              <Box>
+                <Typography variant="body1" gutterBottom>
+                  Found {previewData.totalRecords} records in the selected date range
+                </Typography>
+                
+                <TableContainer component={Paper} sx={{ mt: 2 }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Employee ID</TableCell>
+                        <TableCell>Employee Name</TableCell>
+                        <TableCell>Transaction Time</TableCell>
+                        <TableCell>Transaction Type</TableCell>
+                        <TableCell>Controller</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {previewData.sampleRecords?.slice(0, 10).map((record: any, index: number) => (
+                        <TableRow key={index}>
+                          <TableCell>{record.EmployeeID}</TableCell>
+                          <TableCell>{record.EmployeeName}</TableCell>
+                          <TableCell>{formatDateTime(record.TransactionTime)}</TableCell>
+                          <TableCell>{record.TransactionType}</TableCell>
+                          <TableCell>{record.ControllerName}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setScheduleDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleUpdateSchedule} variant="contained">Save</Button>
+            <Button onClick={() => setShowPreview(false)}>Close</Button>
+          </DialogActions>
+        </Dialog>
+        
+        {/* History Dialog */}
+        <Dialog
+          open={showHistory}
+          onClose={() => setShowHistory(false)}
+          maxWidth="lg"
+          fullWidth
+        >
+          <DialogTitle>Sync History</DialogTitle>
+          <DialogContent>
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Date Range</TableCell>
+                    <TableCell>Processed</TableCell>
+                    <TableCell>Inserted</TableCell>
+                    <TableCell>Duration</TableCell>
+                    <TableCell>Executed At</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {history.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        <Chip
+                          label={item.status}
+                          color={getStatusColor(item.status) as any}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {formatDateTime(item.startDate)} - {formatDateTime(item.endDate)}
+                      </TableCell>
+                      <TableCell>{item.recordsProcessed}</TableCell>
+                      <TableCell>{item.recordsInserted}</TableCell>
+                      <TableCell>{item.executionTimeMs}ms</TableCell>
+                      <TableCell>{formatDateTime(item.executedAt)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowHistory(false)}>Close</Button>
           </DialogActions>
         </Dialog>
       </Box>
