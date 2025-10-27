@@ -381,17 +381,17 @@ const SyncAttendance: React.FC = () => {
                         <Chip
                           label={item.status}
                           size="small"
-                          color={item.status === 'completed' ? 'success' : 
-                                item.status === 'failed' ? 'error' : 'default'}
+                          color={item.status === 'success' ? 'success' : 
+                                item.status === 'error' ? 'error' : 'default'}
                         />
                       </TableCell>
                       <TableCell>{item.recordsProcessed || 0}</TableCell>
-                      <TableCell>{item.duration || 'N/A'}</TableCell>
+                      <TableCell>{item.executionTimeMs ? `${item.executionTimeMs}ms` : 'N/A'}</TableCell>
                       <TableCell>
                         <Chip
-                          label={item.dryRun ? 'Dry Run' : 'Live'}
+                          label={item.parameters?.dryRun ? 'Dry Run' : 'Live'}
                           size="small"
-                          variant={item.dryRun ? 'outlined' : 'filled'}
+                          variant={item.parameters?.dryRun ? 'outlined' : 'filled'}
                         />
                       </TableCell>
                     </TableRow>
