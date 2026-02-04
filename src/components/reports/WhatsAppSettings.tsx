@@ -57,8 +57,12 @@ const WhatsAppSettings: React.FC = () => {
     try {
       const response = await getWhatsAppConfig();
       setConfig(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load WhatsApp configuration');
+    } catch (err: unknown) {
+      const message =
+        typeof err === 'object' && err !== null && 'response' in err && (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : 'Failed to load WhatsApp configuration';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -72,8 +76,12 @@ const WhatsAppSettings: React.FC = () => {
     try {
       await updateWhatsAppConfig(config);
       setSuccess('WhatsApp configuration saved successfully');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to save WhatsApp configuration');
+    } catch (err: unknown) {
+      const message =
+        typeof err === 'object' && err !== null && 'response' in err && (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : 'Failed to save WhatsApp configuration';
+      setError(message);
     } finally {
       setSaving(false);
     }
@@ -89,17 +97,18 @@ const WhatsAppSettings: React.FC = () => {
         success: response.success,
         message: response.message,
       });
-    } catch (err: any) {
-      setTestResult({
-        success: false,
-        message: err.response?.data?.message || 'Failed to test WhatsApp connection',
-      });
+    } catch (err: unknown) {
+      const message =
+        typeof err === 'object' && err !== null && 'response' in err && (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : 'Failed to test WhatsApp connection';
+      setTestResult({ success: false, message });
     } finally {
       setTesting(false);
     }
   };
 
-  const handleConfigChange = (field: keyof WhatsAppConfig, value: any) => {
+  const handleConfigChange = (field: keyof WhatsAppConfig, value: WhatsAppConfig[keyof WhatsAppConfig]) => {
     setConfig(prev => ({
       ...prev,
       [field]: value,

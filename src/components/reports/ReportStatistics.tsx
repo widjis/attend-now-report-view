@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Card,
@@ -50,7 +50,7 @@ const ReportStatisticsView: React.FC = () => {
   const [groupBy, setGroupBy] = useState<'date' | 'controller' | 'status'>('date');
 
   // Load statistics
-  const loadStatistics = async () => {
+  const loadStatistics = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -63,17 +63,21 @@ const ReportStatisticsView: React.FC = () => {
 
       const response = await getReportStatistics(params);
       setStatistics(response);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load statistics');
+    } catch (err: unknown) {
+      const message =
+        typeof err === 'object' && err !== null && 'response' in err && (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : 'Failed to load statistics';
+      setError(message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [startDate, endDate, groupBy]);
 
   // Load data on component mount and when filters change
   useEffect(() => {
     loadStatistics();
-  }, [startDate, endDate, groupBy]);
+  }, [loadStatistics]);
 
   // Prepare chart data
   const chartData = statistics?.data.groupedData.map(item => ({

@@ -89,7 +89,8 @@ const Login: React.FC = () => {
     switchToGuest();
 
     // If user was redirected here from a route, try to go back if guest can access it
-    const fromPath = (location.state as any)?.from?.pathname as string | undefined;
+    const state = location.state as { from?: { pathname?: string } } | null;
+    const fromPath = state?.from?.pathname;
     const fallback = '/enhanced-attendance';
 
     if (fromPath) {

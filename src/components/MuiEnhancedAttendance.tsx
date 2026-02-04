@@ -40,6 +40,7 @@ import {
   useEnhancedAttendanceData, 
   useEnhancedAttendanceExport 
 } from "@/hooks/useEnhancedAttendance";
+import { ScheduleTypeOption, StatusOption } from "@/types/ui";
 import { SCHEDULE_TYPE_OPTIONS, STATUS_OPTIONS, PAGE_SIZE_OPTIONS } from "@/constants/attendance";
 
 // Styled components
@@ -183,7 +184,7 @@ const MuiEnhancedAttendance: React.FC = () => {
                   <Select
                     value={filters.scheduleType}
                     label="Schedule Type"
-                    onChange={(e) => setFilters(prev => ({ ...prev, scheduleType: e.target.value as any }))}
+                    onChange={(e) => setFilters(prev => ({ ...prev, scheduleType: e.target.value as ScheduleTypeOption }))}
                   >
                     {SCHEDULE_TYPE_OPTIONS.map((option) => (
                       <MenuItem key={option.value} value={option.value}>
@@ -201,7 +202,7 @@ const MuiEnhancedAttendance: React.FC = () => {
                   <Select
                     value={filters.clockInStatus}
                     label="Clock In Status"
-                    onChange={(e) => setFilters(prev => ({ ...prev, clockInStatus: e.target.value as any }))}
+                    onChange={(e) => setFilters(prev => ({ ...prev, clockInStatus: e.target.value as StatusOption }))}
                   >
                     {STATUS_OPTIONS.map((option) => (
                       <MenuItem key={option.value} value={option.value}>
@@ -219,7 +220,7 @@ const MuiEnhancedAttendance: React.FC = () => {
                   <Select
                     value={filters.clockOutStatus}
                     label="Clock Out Status"
-                    onChange={(e) => setFilters(prev => ({ ...prev, clockOutStatus: e.target.value as any }))}
+                    onChange={(e) => setFilters(prev => ({ ...prev, clockOutStatus: e.target.value as StatusOption }))}
                   >
                     {STATUS_OPTIONS.map((option) => (
                       <MenuItem key={option.value} value={option.value}>
@@ -337,21 +338,21 @@ const MuiEnhancedAttendance: React.FC = () => {
                     <Chip 
                       label={`Schedule: ${SCHEDULE_TYPE_OPTIONS.find(opt => opt.value === filters.scheduleType)?.label}`} 
                       size="small" 
-                      onDelete={() => setFilters(prev => ({ ...prev, scheduleType: "" as any }))}
+                      onDelete={() => setFilters(prev => ({ ...prev, scheduleType: "" }))}
                     />
                   )}
                   {filters.clockInStatus && (
                     <Chip 
                       label={`Clock In: ${filters.clockInStatus}`} 
                       size="small" 
-                      onDelete={() => setFilters(prev => ({ ...prev, clockInStatus: "" as any }))}
+                      onDelete={() => setFilters(prev => ({ ...prev, clockInStatus: "" }))}
                     />
                   )}
                   {filters.clockOutStatus && (
                     <Chip 
                       label={`Clock Out: ${filters.clockOutStatus}`} 
                       size="small" 
-                      onDelete={() => setFilters(prev => ({ ...prev, clockOutStatus: "" as any }))}
+                      onDelete={() => setFilters(prev => ({ ...prev, clockOutStatus: "" }))}
                     />
                   )}
                 </Box>

@@ -2,12 +2,12 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { useAuth } from '@/contexts/AuthContext';
-import { ROUTE_PERMISSIONS } from '@/types/auth';
+import { ROUTE_PERMISSIONS, UserRole } from '@/types/auth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAuth?: boolean;
-  requiredRole?: string;
+  requiredRole?: UserRole;
   requiredPermissions?: { resource: string; action: string }[];
 }
 
@@ -57,7 +57,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Check role requirements
-  if (requiredRole && !hasRole(requiredRole as any)) {
+  if (requiredRole && !hasRole(requiredRole)) {
     return <Navigate to="/unauthorized" replace />;
   }
 

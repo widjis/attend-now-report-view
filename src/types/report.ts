@@ -26,7 +26,7 @@ export interface ReportGenerationResult {
       recordsInserted: number;
       recordsSkipped: number;
       executionTime: number;
-      data?: any[];
+      data?: unknown[];
     };
     whatsapp?: WhatsAppResult;
   };
@@ -131,7 +131,7 @@ export interface ProcessUnprocessedResult {
 }
 
 // API Response Types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
   data?: T;

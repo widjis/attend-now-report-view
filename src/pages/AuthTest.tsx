@@ -34,7 +34,7 @@ const AuthTest: React.FC = () => {
     password: '',
   });
   
-  const [apiResponse, setApiResponse] = useState<any>(null);
+  const [apiResponse, setApiResponse] = useState<unknown>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [apiLoading, setApiLoading] = useState(false);
   const [endpoint, setEndpoint] = useState('/auth/check');
@@ -75,9 +75,15 @@ const AuthTest: React.FC = () => {
       
       const response = await axios.get(`${API_URL}${endpoint}`, { headers });
       setApiResponse(response.data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('API error:', error);
-      setApiError(error.response?.data?.message || error.message || 'Unknown error');
+      const message =
+        typeof error === 'object' && error !== null && 'response' in error && (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : error instanceof Error
+            ? error.message
+            : 'Unknown error';
+      setApiError(message);
     } finally {
       setApiLoading(false);
     }

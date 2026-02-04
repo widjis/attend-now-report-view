@@ -34,6 +34,11 @@ npm i
 
 # Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
+
+# Step 5: Start both frontend and backend together (concurrent)
+npm run dev:full
+# Frontend: http://localhost:5173
+# Backend API: http://localhost:5001
 ```
 
 **Edit a file directly in GitHub**

@@ -98,8 +98,9 @@ const ReportGeneration: React.FC = () => {
 
       const response = await generateReport(params);
       setResult(response);
-    } catch (err: any) {
-      setError(err.message || 'Failed to generate report');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to generate report';
+      setError(message);
     } finally {
       setLoading(false);
     }

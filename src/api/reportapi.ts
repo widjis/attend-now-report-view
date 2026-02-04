@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { ReportGenerationParams, ProcessUnprocessedParams } from '@/types/report';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
@@ -38,27 +39,13 @@ reportApi.interceptors.response.use(
 );
 
 // Report Generation API
-export const generateReport = async (params: {
-  startDateTime: string;
-  endDateTime: string;
-  controllerList?: string[];
-  insertToAttendanceReport?: boolean;
-  insertToMcgClocking?: boolean;
-  useFilo?: boolean;
-  manualTimes?: any;
-  toleranceSeconds?: number;
-  whatsappChatId?: string;
-  sendWhatsApp?: boolean;
-}) => {
+export const generateReport = async (params: ReportGenerationParams) => {
   const response = await reportApi.post('/generate', params);
   return response.data;
 };
 
 // Process Unprocessed Records API
-export const processUnprocessedRecords = async (params: {
-  batchSize?: number;
-  insertToMcgClocking?: boolean;
-}) => {
+export const processUnprocessedRecords = async (params: ProcessUnprocessedParams) => {
   const response = await reportApi.post('/process-unprocessed', params);
   return response.data;
 };

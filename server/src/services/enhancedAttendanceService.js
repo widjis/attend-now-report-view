@@ -4,8 +4,8 @@ const { buildFilterConditions, buildBaseCTEQueries } = require('../utils/queryBu
 
 // Shared SELECT fragment to ensure consistent fields
 const getSelectFragment = (toleranceMinutes = 15) => {
-  const inTimeExpr = `CONVERT(TIME, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME))))`;
-  const outTimeExpr = `CONVERT(TIME, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME))))`;
+  const inTimeExpr = `CONVERT(TIME, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))))`;
+  const outTimeExpr = `CONVERT(TIME, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))))`;
   const classificationTolerance = Math.max(toleranceMinutes, 30);
 
   return `
@@ -15,12 +15,12 @@ const getSelectFragment = (toleranceMinutes = 15) => {
   s.Description,
   -- Anchor both override and fallback schedules to TrDate using CAST to DATETIME
   COALESCE(
-    DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME)),
-    DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME))
+    DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+    DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
   ) AS ScheduledClockIn,
   COALESCE(
-    DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME)),
-    DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME))
+    DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+    DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
   ) AS ScheduledClockOut,
   -- Derive ScheduleType using tolerant matching against common shift patterns
   CASE 
@@ -55,12 +55,12 @@ const getSelectFragment = (toleranceMinutes = 15) => {
     WHEN (
       DATEDIFF(MINUTE,
         COALESCE(
-          DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME)),
-          DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME))
+          DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+          DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
         ),
         COALESCE(
-          DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME)),
-          DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME))
+          DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+          DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
         )
       ) + CASE WHEN ${outTimeExpr} < ${inTimeExpr} THEN 1440 ELSE 0 END BETWEEN 900 AND 1020
     ) THEN 'Overnight_OT'
@@ -74,15 +74,15 @@ const getSelectFragment = (toleranceMinutes = 15) => {
   a.ClockOutController,
   CASE 
     WHEN a.ActualClockIn IS NULL THEN 'Missing'
-    WHEN DATEDIFF(MINUTE, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME))), a.ActualClockIn) > ${toleranceMinutes} THEN 'Late'
-    WHEN DATEDIFF(MINUTE, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME))), a.ActualClockIn) < -${toleranceMinutes} THEN 'Early'
+    WHEN DATEDIFF(MINUTE, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))), a.ActualClockIn) > ${toleranceMinutes} THEN 'Late'
+    WHEN DATEDIFF(MINUTE, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))), a.ActualClockIn) < -${toleranceMinutes} THEN 'Early'
     ELSE 'OnTime'
   END AS ClockInStatus,
   CASE 
     WHEN a.ActualClockOut IS NULL THEN 'Missing'
-    WHEN ABS(DATEDIFF(MINUTE, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME))), a.ActualClockOut)) > 120 THEN 'Out of Range'
-    WHEN DATEDIFF(MINUTE, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME))), a.ActualClockOut) < -${toleranceMinutes} THEN 'Early'
-    WHEN DATEDIFF(MINUTE, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME))), a.ActualClockOut) > ${toleranceMinutes} THEN 'Late'
+    WHEN ABS(DATEDIFF(MINUTE, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))), a.ActualClockOut)) > 120 THEN 'Out of Range'
+    WHEN DATEDIFF(MINUTE, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))), a.ActualClockOut) < -${toleranceMinutes} THEN 'Early'
+    WHEN DATEDIFF(MINUTE, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))), a.ActualClockOut) > ${toleranceMinutes} THEN 'Late'
     ELSE 'OnTime'
   END AS ClockOutStatus
 `;
@@ -244,8 +244,8 @@ const getEveningOtUsers = async ({ startDate, endDate, toleranceMinutes = 15 }) 
   const pool = await poolPromise;
   const baseCTE = buildBaseCTEQueries(toleranceMinutes);
 
-  const inTimeExpr = `CONVERT(TIME, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME))))`;
-  const outTimeExpr = `CONVERT(TIME, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME))))`;
+  const inTimeExpr = `CONVERT(TIME, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))))`;
+  const outTimeExpr = `CONVERT(TIME, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))))`;
   const classificationTolerance = Math.max(toleranceMinutes, 30);
 
   // Build an inner SELECT with classification, then filter in the outer WHERE

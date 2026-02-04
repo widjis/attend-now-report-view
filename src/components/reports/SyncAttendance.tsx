@@ -29,7 +29,7 @@ import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { syncAttendance, getSyncHistory, previewSyncData } from '@/api/syncApi';
-import { SyncAttendanceParams, SyncResult, SyncHistoryItem } from '@/types/sync';
+import { SyncAttendanceParams, SyncResult, SyncHistoryItem, SyncPreviewRow } from '@/types/sync';
 
 const SyncAttendance: React.FC = () => {
   const [params, setParams] = useState<SyncAttendanceParams>({
@@ -46,7 +46,7 @@ const SyncAttendance: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<SyncHistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const [previewData, setPreviewData] = useState<any[]>([]);
+  const [previewData, setPreviewData] = useState<SyncPreviewRow[]>([]);
   const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {

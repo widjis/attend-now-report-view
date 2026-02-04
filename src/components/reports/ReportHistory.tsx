@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Card,
@@ -55,7 +55,7 @@ const ReportHistory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Load report history
-  const loadReportHistory = async () => {
+  const loadReportHistory = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -71,17 +71,21 @@ const ReportHistory: React.FC = () => {
       const response: ReportHistoryResponse = await getReportHistory(params);
       setReports(response.data.records);
       setTotalRecords(response.data.pagination.total);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load report history');
+    } catch (err: unknown) {
+      const message =
+        typeof err === 'object' && err !== null && 'response' in err && (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : 'Failed to load report history';
+      setError(message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, rowsPerPage, startDate, endDate, statusFilter]);
 
   // Load data on component mount and when filters change
   useEffect(() => {
     loadReportHistory();
-  }, [page, rowsPerPage, startDate, endDate, statusFilter]);
+  }, [loadReportHistory]);
 
   // Handle pagination
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -103,7 +107,7 @@ const ReportHistory: React.FC = () => {
   };
 
   // Get status chip color
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): 'default' | 'success' | 'error' | 'warning' => {
     switch (status) {
       case 'Success':
         return 'success';
@@ -239,7 +243,7 @@ const ReportHistory: React.FC = () => {
                       <TableCell>
                         <Chip
                           label={report.Status}
-                          color={getStatusColor(report.Status) as any}
+                          color={getStatusColor(report.Status)}
                           size="small"
                         />
                       </TableCell>

@@ -1,14 +1,11 @@
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { debounce } from 'lodash-es';
 
 // Debounced search hook
 export const useDebouncedSearch = (callback: (value: string) => void, delay: number = 300) => {
-  return useCallback(
-    debounce((value: string) => {
-      callback(value);
-    }, delay),
-    [callback, delay]
-  );
+  return useMemo(() => debounce((value: string) => {
+    callback(value);
+  }, delay), [callback, delay]);
 };
 
 // Memoized filter options

@@ -31,7 +31,7 @@ export interface SyncResult {
     executionTimeMs: number;
     executedAt: string;
     createdBy: string;
-    parameters?: any;
+    parameters?: Partial<SyncAttendanceParams>;
     errors?: string[];
     warnings?: string[];
     whatsapp?: {
@@ -66,7 +66,7 @@ export interface SyncHistoryItem {
   executionTimeMs: number;
   executedAt: string;
   createdBy: string;
-  parameters?: any;
+  parameters?: Partial<SyncAttendanceParams>;
   errorMessage?: string;
   whatsappSent?: boolean;
 }
@@ -122,9 +122,18 @@ export interface WhatsAppConfig {
   timeout?: number;
 }
 
+export interface SyncPreviewRow {
+  employeeId: string;
+  employeeName: string;
+  date: string;
+  checkIn?: string;
+  checkOut?: string;
+  status: string;
+}
+
 export interface SyncPreviewData {
   totalRecords: number;
-  sampleRecords: any[];
+  sampleRecords: SyncPreviewRow[];
   dateRange: {
     earliest: string;
     latest: string;
@@ -140,7 +149,7 @@ export interface SyncValidationResult {
     type: 'error' | 'warning' | 'info';
     message: string;
     count?: number;
-    affectedRecords?: any[];
+    affectedRecords?: SyncPreviewRow[];
   }[];
   recommendations: string[];
   estimatedSuccess: {
