@@ -536,6 +536,44 @@ Could not resolve "./ReportGeneration.tsx" from "src/components/reports/index.ts
 ### Notes
 - Status calculations now use baseline-first precedence consistently
 - Export and Evening_OT user selection inherit the same precedence
+
+## 2026-02-05 06:22:51 WITA - Checked tblAttendanceReport (Feb 4)
+
+### Query
+- API: GET /api/attendance?startDate=2026-02-04&endDate=2026-02-04&search=MTI240051
+
+### Observations
+- Found entries:
+  - Clock In 2026-02-04T18:59:01Z with schIn=23:00 schOut=07:00
+  - Clock Out 2026-02-04T06:40:09Z with schIn=23:00 schOut=07:00
+  - Clock In 2026-02-04T06:40:09Z with schIn=07:00 schOut=15:00
+
+### Notes
+- tblAttendanceReport contains both 23:00–07:00 and 07:00–15:00 schedule tags on the same day
+- Enhanced Attendance uses baseline-first precedence to avoid misclassification
+
+## 2026-02-05 06:33:42 WITA - Window actuals to schedule window
+
+### Change
+- Updated enhancedAttendanceService to compute ActualClockIn/Out using a window anchored to normalized ScheduledOut
+- Window: [ScheduledOut(normalized) - 14h, ScheduledOut(normalized) + 120m]
+
+### Verification
+- Feb 4 MTI240051: actIn=18:59 (Early), actOut currently null due to event-date mismatch
+
+### Follow-up
+- Implement overnight shift date mapping so OUT events from early morning can attach to same displayed date row
+
+## 2026-02-05 06:45:52 WITA - Fallback for early-morning OUT
+
+### Change
+- Added fallback selection for ActualClockOut to include early-morning (00:00–12:00) OUT events on the same base date when windowed search yields none
+
+### Verification
+- Feb 4 MTI240051 now shows actOut=06:40 with outStatus pending refinement
+
+### Next
+- Adjust status calculation to treat fallback actOut correctly and avoid 'Missing'
 - ✅ UI framework inconsistency - migrated from Radix UI to Material UI
 - ✅ MenuItem ReactNode error - added null checks and String conversion
 - ✅ Department dropdown showing [object Object] - fixed API response handling

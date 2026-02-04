@@ -68,21 +68,486 @@ const getSelectFragment = (toleranceMinutes = 15) => {
       ELSE 'Unknown'
     END AS ScheduleType,
   a.TrDate AS Date,
-  a.ActualClockIn,
-  a.ActualClockOut,
+  (
+    SELECT MIN(ar.TrDateTime)
+    FROM tblAttendanceReport ar
+    WHERE ar.StaffNo = s.StaffNo
+      AND ar.ClockEvent = 'Clock In'
+      AND ar.TrDateTime BETWEEN 
+        DATEADD(HOUR, -14,
+          CASE WHEN 
+            COALESCE(
+              DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+              DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+            )
+            < 
+            COALESCE(
+              DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+              DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+            )
+          THEN DATEADD(DAY, 1,
+            COALESCE(
+              DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+              DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+            )
+          )
+          ELSE 
+            COALESCE(
+              DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+              DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+            )
+          END
+        )
+        AND DATEADD(MINUTE, 120,
+          CASE WHEN 
+            COALESCE(
+              DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+              DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+            )
+            < 
+            COALESCE(
+              DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+              DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+            )
+          THEN DATEADD(DAY, 1,
+            COALESCE(
+              DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+              DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+            )
+          )
+          ELSE 
+            COALESCE(
+              DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+              DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+            )
+          END
+        )
+  ) AS ActualClockIn,
+  COALESCE(
+    (
+      SELECT MAX(ar.TrDateTime)
+      FROM tblAttendanceReport ar
+      WHERE ar.StaffNo = s.StaffNo
+        AND ar.ClockEvent = 'Clock Out'
+        AND ar.TrDateTime BETWEEN 
+          DATEADD(HOUR, -14,
+            CASE WHEN 
+              COALESCE(
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+              )
+              < 
+              COALESCE(
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+              )
+            THEN DATEADD(DAY, 1,
+              COALESCE(
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+              )
+            )
+            ELSE 
+              COALESCE(
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+              )
+            END
+          )
+          AND DATEADD(MINUTE, 120,
+            CASE WHEN 
+              COALESCE(
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+              )
+              < 
+              COALESCE(
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+              )
+            THEN DATEADD(DAY, 1,
+              COALESCE(
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+              )
+            )
+            ELSE 
+              COALESCE(
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+              )
+            END
+          )
+    ),
+    (
+      SELECT MAX(ar.TrDateTime)
+      FROM tblAttendanceReport ar
+      WHERE ar.StaffNo = s.StaffNo
+        AND ar.ClockEvent = 'Clock Out'
+        AND ar.TrDateTime BETWEEN 
+          DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST('00:00:00' AS DATETIME))
+          AND DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST('12:00:00' AS DATETIME))
+    )
+  ) AS ActualClockOut,
   a.ClockInController,
   a.ClockOutController,
   CASE 
-    WHEN a.ActualClockIn IS NULL THEN 'Missing'
-    WHEN DATEDIFF(MINUTE, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))), a.ActualClockIn) > ${toleranceMinutes} THEN 'Late'
-    WHEN DATEDIFF(MINUTE, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))), a.ActualClockIn) < -${toleranceMinutes} THEN 'Early'
+    WHEN (
+      SELECT MIN(ar.TrDateTime)
+      FROM tblAttendanceReport ar
+      WHERE ar.StaffNo = s.StaffNo
+        AND ar.TrDateTime BETWEEN 
+          DATEADD(MINUTE, -360, 
+            COALESCE(
+              DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+              DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+            )
+          )
+          AND DATEADD(MINUTE, 120,
+            CASE WHEN 
+              COALESCE(
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+              )
+              < 
+              COALESCE(
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+              )
+            THEN DATEADD(DAY, 1,
+              COALESCE(
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+              )
+            )
+            ELSE 
+              COALESCE(
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+              )
+            END
+          )
+    ) IS NULL THEN 'Missing'
+    WHEN DATEDIFF(MINUTE, 
+      COALESCE(
+        DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+        DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+      ),
+      (
+        SELECT MIN(ar.TrDateTime)
+        FROM tblAttendanceReport ar
+        WHERE ar.StaffNo = s.StaffNo
+          AND ar.TrDateTime BETWEEN 
+            DATEADD(MINUTE, -360, 
+              COALESCE(
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+              )
+            )
+            AND DATEADD(MINUTE, 120,
+              CASE WHEN 
+                COALESCE(
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+                )
+                < 
+                COALESCE(
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+                )
+              THEN DATEADD(DAY, 1,
+                COALESCE(
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+                )
+              )
+              ELSE 
+                COALESCE(
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+                )
+              END
+            )
+      )
+    ) > ${toleranceMinutes} THEN 'Late'
+    WHEN DATEDIFF(MINUTE, 
+      COALESCE(
+        DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+        DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+      ),
+      (
+        SELECT MIN(ar.TrDateTime)
+        FROM tblAttendanceReport ar
+        WHERE ar.StaffNo = s.StaffNo
+          AND ar.TrDate = a.TrDate
+          AND ar.ClockEvent = 'Clock In'
+          AND ar.TrDateTime BETWEEN 
+            DATEADD(MINUTE, -360, 
+              COALESCE(
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+              )
+            )
+            AND DATEADD(MINUTE, 120,
+              CASE WHEN 
+                COALESCE(
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+                )
+                < 
+                COALESCE(
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+                )
+              THEN DATEADD(DAY, 1,
+                COALESCE(
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+                )
+              )
+              ELSE 
+                COALESCE(
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+                )
+              END
+            )
+      )
+    ) < -${toleranceMinutes} THEN 'Early'
     ELSE 'OnTime'
   END AS ClockInStatus,
   CASE 
-    WHEN a.ActualClockOut IS NULL THEN 'Missing'
-    WHEN ABS(DATEDIFF(MINUTE, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))), a.ActualClockOut)) > 120 THEN 'Out of Range'
-    WHEN DATEDIFF(MINUTE, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))), a.ActualClockOut) < -${toleranceMinutes} THEN 'Early'
-    WHEN DATEDIFF(MINUTE, COALESCE(DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)), DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))), a.ActualClockOut) > ${toleranceMinutes} THEN 'Late'
+    WHEN (
+      SELECT MAX(ar.TrDateTime)
+      FROM tblAttendanceReport ar
+      WHERE ar.StaffNo = s.StaffNo
+        AND ar.ClockEvent = 'Clock Out'
+        AND ar.TrDateTime BETWEEN 
+          DATEADD(MINUTE, -360, 
+            COALESCE(
+              DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+              DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+            )
+          )
+          AND DATEADD(MINUTE, 120,
+            CASE WHEN 
+              COALESCE(
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+              )
+              < 
+              COALESCE(
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+              )
+            THEN DATEADD(DAY, 1,
+              COALESCE(
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+              )
+            )
+            ELSE 
+              COALESCE(
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+              )
+            END
+          )
+    ) IS NULL THEN 'Missing'
+    WHEN ABS(DATEDIFF(MINUTE, 
+      COALESCE(
+        CASE WHEN 
+          COALESCE(
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+          )
+          < 
+          COALESCE(
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+          )
+        THEN DATEADD(DAY, 1,
+          COALESCE(
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+          )
+        )
+        ELSE 
+          COALESCE(
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+          )
+        END,
+        NULL
+      ),
+      (
+        SELECT MAX(ar.TrDateTime)
+        FROM tblAttendanceReport ar
+        WHERE ar.StaffNo = s.StaffNo
+          AND ar.ClockEvent = 'Clock Out'
+          AND ar.TrDateTime BETWEEN 
+            DATEADD(MINUTE, -360, 
+              COALESCE(
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+              )
+            )
+            AND DATEADD(MINUTE, 120,
+              CASE WHEN 
+                COALESCE(
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+                )
+                < 
+                COALESCE(
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+                )
+              THEN DATEADD(DAY, 1,
+                COALESCE(
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+                )
+              )
+              ELSE 
+                COALESCE(
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+                )
+              END
+            )
+      )
+    )) > 120 THEN 'Out of Range'
+    WHEN DATEDIFF(MINUTE, 
+      COALESCE(
+        CASE WHEN 
+          COALESCE(
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+          )
+          < 
+          COALESCE(
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+          )
+        THEN DATEADD(DAY, 1,
+          COALESCE(
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+          )
+        )
+        ELSE 
+          COALESCE(
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+          )
+        END,
+        NULL
+      ),
+      (
+        SELECT MAX(ar.TrDateTime)
+        FROM tblAttendanceReport ar
+        WHERE ar.StaffNo = s.StaffNo
+          AND ar.TrDate = a.TrDate
+          AND ar.ClockEvent = 'Clock Out'
+          AND ar.TrDateTime BETWEEN 
+            DATEADD(MINUTE, -360, 
+              COALESCE(
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+              )
+            )
+            AND DATEADD(MINUTE, 120,
+              CASE WHEN 
+                COALESCE(
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+                )
+                < 
+                COALESCE(
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+                )
+              THEN DATEADD(DAY, 1,
+                COALESCE(
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+                )
+              )
+              ELSE 
+                COALESCE(
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+                )
+              END
+            )
+      )
+    ) < -${toleranceMinutes} THEN 'Early'
+    WHEN DATEDIFF(MINUTE, 
+      COALESCE(
+        CASE WHEN 
+          COALESCE(
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+          )
+          < 
+          COALESCE(
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+          )
+        THEN DATEADD(DAY, 1,
+          COALESCE(
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+          )
+        )
+        ELSE 
+          COALESCE(
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+            DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+          )
+        END,
+        NULL
+      ),
+      (
+        SELECT MAX(ar.TrDateTime)
+        FROM tblAttendanceReport ar
+        WHERE ar.StaffNo = s.StaffNo
+          AND ar.TrDate = a.TrDate
+          AND ar.ClockEvent = 'Clock Out'
+          AND ar.TrDateTime BETWEEN 
+            DATEADD(MINUTE, -360, 
+              COALESCE(
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+                DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+              )
+            )
+            AND DATEADD(MINUTE, 120,
+              CASE WHEN 
+                COALESCE(
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+                )
+                < 
+                COALESCE(
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockIn AS DATETIME)),
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockInOverride AS DATETIME))
+                )
+              THEN DATEADD(DAY, 1,
+                COALESCE(
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+                )
+              )
+              ELSE 
+                COALESCE(
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(s.ScheduledClockOut AS DATETIME)),
+                  DATEADD(DAY, DATEDIFF(DAY, 0, a.TrDate), CAST(a.ScheduledClockOutOverride AS DATETIME))
+                )
+              END
+            )
+      )
+    ) > ${toleranceMinutes} THEN 'Late'
     ELSE 'OnTime'
   END AS ClockOutStatus
 `;
