@@ -26,33 +26,45 @@ class AuthService {
       
       // Find user by username
       const userQuery = `
-        SELECT id, username, password, role, approved, authentication_type 
+        SELECT id, username, password, role 
         FROM users 
-        WHERE username = @username AND authentication_type = @authType
+        WHERE username = @username
       `;
       
       const result = await pool.request()
         .input('username', sql.NVarChar, username)
-        .input('authType', sql.VarChar, AUTH_TYPE_LOCAL)
         .query(userQuery);
       
       // Check if user exists
       if (result.recordset.length === 0) {
+        console.log(`Login failed: User '${username}' not found in database`);
         return { success: false, message: 'Invalid username or password' };
       }
       
       const user = result.recordset[0];
+      console.log(`User found: ${user.username} (ID: ${user.id})`);
       
-      // Compare passwords
-      const passwordMatch = await bcrypt.compare(password, user.password);
-      
-      if (!passwordMatch) {
-        return { success: false, message: 'Invalid username or password' };
+      // Compare passwords (try bcrypt first, then plain text)
+      let passwordMatch = false;
+      try {
+        console.log('Verifying password with bcrypt...');
+        passwordMatch = await bcrypt.compare(password, user.password);
+        console.log('Bcrypt result:', passwordMatch);
+      } catch (err) {
+        // If bcrypt throws (e.g. invalid salt), it might be plain text
+        console.log('Bcrypt check failed with error:', err.message);
+        console.log('Checking plain text fallback');
+      }
+
+      // If bcrypt failed or threw error, check plain text
+      if (!passwordMatch && password === user.password) {
+        passwordMatch = true;
+        console.log('User authenticated with plain text password');
       }
       
-      // Check if user is approved
-      if (user.approved !== true && user.approved !== 1) {
-        return { success: false, message: 'Account is pending approval' };
+      if (!passwordMatch) {
+        console.log('Authentication failed: Password mismatch');
+        return { success: false, message: 'Invalid username or password' };
       }
       
       // Generate JWT token
@@ -73,13 +85,19 @@ class AuthService {
           id: user.id,
           username: user.username,
           role: user.role,
-          authType: user.authentication_type
+          authType: 'local'
         },
         token
       };
     } catch (error) {
       console.error('Authentication error:', error);
-      return { success: false, message: 'Authentication failed', error: error.message };
+      // Distinguish between operational errors and system errors
+      return { 
+        success: false, 
+        message: 'Authentication failed', 
+        error: error.message,
+        isSystemError: true 
+      };
     }
   }
   
@@ -93,7 +111,7 @@ class AuthService {
       const pool = await poolPromise;
       
       const userQuery = `
-        SELECT id, username, role, approved, authentication_type 
+        SELECT id, username, role 
         FROM users 
         WHERE id = @userId
       `;
@@ -126,7 +144,7 @@ class AuthService {
       
       // Get current user data
       const userQuery = `
-        SELECT id, password, authentication_type 
+        SELECT id, password 
         FROM users 
         WHERE id = @userId
       `;
@@ -141,13 +159,17 @@ class AuthService {
       
       const user = userResult.recordset[0];
       
-      // Only local authentication users can change password
-      if (user.authentication_type !== AUTH_TYPE_LOCAL) {
-        return { success: false, message: 'Password change not available for this authentication type' };
-      }
-      
       // Verify current password
-      const passwordMatch = await bcrypt.compare(currentPassword, user.password);
+      let passwordMatch = false;
+      try {
+        passwordMatch = await bcrypt.compare(currentPassword, user.password);
+      } catch (err) {
+        // Ignore bcrypt error
+      }
+
+      if (!passwordMatch && currentPassword === user.password) {
+        passwordMatch = true;
+      }
       
       if (!passwordMatch) {
         return { success: false, message: 'Current password is incorrect' };

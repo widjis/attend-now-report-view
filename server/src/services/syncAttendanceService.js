@@ -450,7 +450,7 @@ class SyncAttendanceService {
   }
 
   async getSyncHistory(params) {
-    const { limit = 50, offset = 0, startDate, endDate, status, createdBy } = params;
+    const { limit = 50, offset = 0, startDate, endDate, status, createdBy, scheduleId, type } = params;
 
     try {
       const connection = await poolPromise;
@@ -478,22 +478,18 @@ class SyncAttendanceService {
         inputs.push({ name: 'createdBy', type: sql.VarChar(100), value: createdBy });
       }
 
+      if (scheduleId) {
+        whereClause += ' AND Parameters LIKE @scheduleIdPattern';
+        inputs.push({ name: 'scheduleIdPattern', type: sql.NVarChar, value: `%"scheduleId":"${scheduleId}"%` });
+      }
+
+      if (type) {
+        whereClause += ' AND Parameters LIKE @typePattern';
+        inputs.push({ name: 'typePattern', type: sql.NVarChar, value: `%"type":"${type}"%` });
+      }
+
       const query = `
-        SELECT 
-          SyncId,
-          StartDate,
-          EndDate,
-          Status,
-          TotalRetrieved,
-          RecordsProcessed,
-          RecordsInserted,
-          RecordsSkipped,
-          ValidRecords,
-          InvalidRecords,
-          ExecutionTimeMs,
-          ExecutedAt,
-          CreatedBy,
-          ErrorMessage
+        SELECT *
         FROM tblReportGenerationLog
         ${whereClause}
         ORDER BY ExecutedAt DESC

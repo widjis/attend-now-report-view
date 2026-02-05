@@ -24,7 +24,9 @@ import { LoginCredentials } from '@/types/auth';
 import axios from 'axios';
 import { Refresh as RefreshIcon, Logout as LogoutIcon } from '@mui/icons-material';
 
-const API_URL = 'http://localhost:5001/api';
+import { getApiBaseUrl } from '@/utils/apiConfig';
+
+const API_URL = getApiBaseUrl();
 
 const AuthTest: React.FC = () => {
   const { user, isAuthenticated, isLoading, login, logout, error: authError } = useAuth();

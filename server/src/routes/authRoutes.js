@@ -24,6 +24,15 @@ router.post('/login', async (req, res) => {
     const result = await authService.login(username, password);
     
     if (!result.success) {
+      // If it's a system error (DB connection, etc.), return 500
+      if (result.isSystemError) {
+        return res.status(500).json({
+          success: false,
+          message: 'System error during authentication. Please check server logs.',
+          error: process.env.NODE_ENV === 'development' ? result.error : undefined
+        });
+      }
+      // Otherwise return 401 for invalid credentials
       return res.status(401).json(result);
     }
     

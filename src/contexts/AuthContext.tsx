@@ -9,15 +9,12 @@ import {
 } from '@/types/auth';
 import axios from 'axios';
 
-// API configuration
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
-const AUTH_ENDPOINTS = {
-  LOGIN: `${API_URL}/auth/login`,
-  CHECK: `${API_URL}/auth/check`,
-  ME: `${API_URL}/auth/me`,
-};
+import { getApiBaseUrl, getAuthEndpoints } from '@/utils/apiConfig';
 
-console.log('Using API URL:', API_URL);
+// API configuration
+const AUTH_ENDPOINTS = getAuthEndpoints();
+
+console.log('Using API URL:', getApiBaseUrl());
 
 // Initial state
 const initialState: AuthState = {

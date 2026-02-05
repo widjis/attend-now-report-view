@@ -12,6 +12,7 @@ export interface SyncAttendanceParams {
   useManualTimes?: boolean;
   manualInTime?: string;
   manualOutTime?: string;
+  scheduleId?: string;
 }
 
 export interface SyncResult {
@@ -49,6 +50,8 @@ export interface SyncHistoryParams {
   endDate?: string;
   status?: 'success' | 'error' | 'running' | 'cancelled';
   createdBy?: string;
+  scheduleId?: string;
+  type?: string;
 }
 
 export interface SyncHistoryItem {
@@ -72,7 +75,11 @@ export interface SyncHistoryItem {
 }
 
 export interface SyncScheduleItem {
+  id?: string;
+  type?: 'ATTENDANCE_SYNC' | 'EMPLOYEE_SYNC';
   time: string; // HH:MM format
+  frequency?: 'daily' | 'interval';
+  intervalValue?: number; // hours
   enabled: boolean;
   description: string;
   timezone?: string;

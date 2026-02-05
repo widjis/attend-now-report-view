@@ -1,11 +1,6 @@
 import { AttendanceFilters, AttendanceResponse, AttendanceSummary } from "../types/attendance";
 import { toast } from "sonner";
-
-// Get API base URL based on environment configuration
-const getApiBaseUrl = () => {
-  const useRelativeUrl = import.meta.env.VITE_USE_RELATIVE_API_URL === 'true';
-  return useRelativeUrl ? '/api' : import.meta.env.VITE_API_BASE_URL;
-};
+import { getApiBaseUrl } from "@/utils/apiConfig";
 
 const API_BASE_URL = getApiBaseUrl();
 

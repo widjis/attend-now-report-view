@@ -1,19 +1,20 @@
 const { SyncAttendanceService } = require('../services/syncAttendanceService');
 const whatsappService = require('../services/whatsappService');
-const { SchedulerService } = require('../services/schedulerService');
+const { schedulerService } = require('../services/schedulerService');
 const { v4: uuidv4 } = require('uuid');
 
 class SyncController {
   constructor() {
     this.syncService = new SyncAttendanceService();
     this.whatsappService = whatsappService;
-    this.schedulerService = new SchedulerService();
+    this.schedulerService = schedulerService;
   }
 
   // Manual sync attendance
   async syncAttendance(req, res) {
     try {
       const {
+        type,
         startDateTime,
         endDateTime,
         sendWhatsApp = false,
@@ -24,8 +25,23 @@ class SyncController {
         insertToMCG = true,
         useManualTimes = false,
         manualInTime,
-        manualOutTime
+        manualOutTime,
+        scheduleId
       } = req.body;
+
+      // Handle Employee Sync
+      if (type === 'EMPLOYEE_SYNC') {
+        console.log(`Starting manual employee sync`);
+        
+        // Execute sync using scheduler service
+        const result = await this.schedulerService.executeManualSync({ type, scheduleId, createdBy: req.user?.username || 'manual' });
+        
+        return res.json({
+          success: true,
+          message: 'Employee sync completed successfully',
+          data: result
+        });
+      }
 
       // Validate required parameters
       if (!startDateTime || !endDateTime) {
@@ -64,7 +80,9 @@ class SyncController {
         manualInTime,
         manualOutTime,
         executedAt,
-        createdBy
+        createdBy,
+        scheduleId,
+        type: 'ATTENDANCE_SYNC'
       };
 
       console.log(`Starting attendance sync: ${syncId}`);
